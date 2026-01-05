@@ -1,857 +1,248 @@
 <!doctype html>
 <html lang="id" class="h-full">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Indikator Pelayanan Rawat Inap</title>
-  <script src="/_sdk/element_sdk.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-        body {
-            box-sizing: border-box;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        .metric-card {
-            transition: all 0.3s ease;
-        }
-        
-        .metric-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-        }
-        
-        .chart-container {
-            position: relative;
-            height: 320px;
-        }
-        
-        .status-good { border-left: 4px solid #10B981; }
-        .status-warning { border-left: 4px solid #F59E0B; }
-        .status-danger { border-left: 4px solid #EF4444; }
-        
-        .sticky-header {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background: #4F46E5;
-        }
-        
-        .insight-box {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
-            padding: 24px;
-            color: white;
-            margin-bottom: 24px;
-        }
-        
-        .loading-spinner {
-            border: 3px solid #f3f4f6;
-            border-top: 3px solid #4F46E5;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .badge-green { background: #D1FAE5; color: #065F46; }
-        .badge-yellow { background: #FEF3C7; color: #92400E; }
-        .badge-red { background: #FEE2E2; color: #991B1B; }
-    </style>
-  <style>@view-transition { navigation: auto; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
- </head>
- <body class="h-full w-full overflow-auto">
-  <div class="w-full h-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"><!-- Header Section -->
-   <header class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
-    <div class="max-w-7xl mx-auto px-6 py-8">
-     <div class="flex items-center justify-between">
-      <div>
-       <h1 id="dashboardTitle" class="text-4xl font-bold mb-2">Dashboard Indikator Pelayanan Rawat Inap</h1>
-       <p id="hospitalName" class="text-lg opacity-90">RSUD Drs. H. AMRI TAMBUNAN</p>
-       <p id="dataSource" class="text-sm opacity-75 mt-1">Sumber Data: Google Sheet – Indikator_Pelayanan</p>
-      </div>
-      <div class="text-right">
-       <div class="text-sm opacity-75">
-        Periode Terakhir
-       </div>
-       <div id="lastPeriod" class="text-2xl font-bold">
-        Loading...
-       </div>
-      </div>
-     </div>
-    </div>
-   </header>
-   <div class="max-w-7xl mx-auto px-6 py-6"><!-- Filter Section -->
-    <div class="bg-white rounded-xl shadow-md p-6 mb-6">
-     <div class="flex flex-wrap gap-4 items-center">
-      <div><label class="block text-sm font-semibold text-gray-700 mb-2"> <i class="fas fa-calendar-day mr-2"></i>Pilih Periode </label> <select id="periodeFilter" class="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition"> <option value="all">Semua Periode</option> </select>
-      </div><button id="refreshBtn" class="ml-auto px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition shadow-md"> <i class="fas fa-sync-alt mr-2"></i>Refresh Data </button>
-     </div>
-    </div><!-- Loading Indicator -->
-    <div id="loadingIndicator" class="flex justify-center items-center py-12">
-     <div class="loading-spinner"></div><span class="ml-3 text-gray-600">Memuat data dari Google Sheet...</span>
-    </div><!-- Main Content (hidden while loading) -->
-    <div id="mainContent" style="display: none;"><!-- Insight Box -->
-     <div class="insight-box">
-      <h3 class="text-xl font-bold mb-3"><i class="fas fa-lightbulb mr-2"></i>Analisis Otomatis</h3>
-      <div id="insightContent" class="text-sm space-y-2">
-       <p>📊 Standar Ideal: BOR (60-85%) | AVLOS (3-9 hari) | TOI (1-3 hari) | BTO (≥40 kali/tahun)</p>
-      </div>
-     </div><!-- Key Metrics Cards -->
-     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6"><!-- BOR Card -->
-      <div class="metric-card bg-white rounded-xl shadow-md p-6 status-good">
-       <div class="flex items-start justify-between mb-4">
-        <div class="bg-blue-100 p-3 rounded-lg"><i class="fas fa-bed text-blue-600 text-2xl"></i>
-        </div><span id="borBadge" class="badge badge-green">Normal</span>
-       </div>
-       <div class="text-sm font-medium text-gray-600 mb-1">
-        BOR (Bed Occupancy Rate)
-       </div>
-       <div id="borValue" class="text-4xl font-bold text-gray-900 mb-2">
-        0.00%
-       </div>
-       <div class="text-xs text-gray-500">
-        Target: 60-85%
-       </div>
-      </div><!-- AVLOS Card -->
-      <div class="metric-card bg-white rounded-xl shadow-md p-6 status-good">
-       <div class="flex items-start justify-between mb-4">
-        <div class="bg-green-100 p-3 rounded-lg"><i class="fas fa-clock text-green-600 text-2xl"></i>
-        </div><span id="avlosBadge" class="badge badge-green">Normal</span>
-       </div>
-       <div class="text-sm font-medium text-gray-600 mb-1">
-        AVLOS (Average Length of Stay)
-       </div>
-       <div id="avlosValue" class="text-4xl font-bold text-gray-900 mb-2">
-        0.00
-       </div>
-       <div class="text-xs text-gray-500">
-        Target: 3-9 hari
-       </div>
-      </div><!-- TOI Card -->
-      <div class="metric-card bg-white rounded-xl shadow-md p-6 status-good">
-       <div class="flex items-start justify-between mb-4">
-        <div class="bg-teal-100 p-3 rounded-lg"><i class="fas fa-hourglass-half text-teal-600 text-2xl"></i>
-        </div><span id="toiBadge" class="badge badge-green">Normal</span>
-       </div>
-       <div class="text-sm font-medium text-gray-600 mb-1">
-        TOI (Turn Over Interval)
-       </div>
-       <div id="toiValue" class="text-4xl font-bold text-gray-900 mb-2">
-        0.00
-       </div>
-       <div class="text-xs text-gray-500">
-        Target: 1-3 hari
-       </div>
-      </div><!-- BTO Card -->
-      <div class="metric-card bg-white rounded-xl shadow-md p-6 status-good">
-       <div class="flex items-start justify-between mb-4">
-        <div class="bg-purple-100 p-3 rounded-lg"><i class="fas fa-sync-alt text-purple-600 text-2xl"></i>
-        </div><span id="btoBadge" class="badge badge-green">Normal</span>
-       </div>
-       <div class="text-sm font-medium text-gray-600 mb-1">
-        BTO (Bed Turn Over)
-       </div>
-       <div id="btoValue" class="text-4xl font-bold text-gray-900 mb-2">
-        0.00
-       </div>
-       <div class="text-xs text-gray-500">
-        Target: ≥40 kali/tahun
-       </div>
-      </div><!-- NDR Card -->
-      <div class="metric-card bg-white rounded-xl shadow-md p-6 status-good">
-       <div class="flex items-start justify-between mb-4">
-        <div class="bg-red-100 p-3 rounded-lg"><i class="fas fa-heartbeat text-red-600 text-2xl"></i>
-        </div><span id="ndrBadge" class="badge badge-green">Normal</span>
-       </div>
-       <div class="text-sm font-medium text-gray-600 mb-1">
-        NDR (Net Death Rate)
-       </div>
-       <div id="ndrValue" class="text-4xl font-bold text-gray-900 mb-2">
-        0.00��
-       </div>
-       <div class="text-xs text-gray-500">
-        Target: &lt; 25‰
-       </div>
-      </div><!-- GDR Card -->
-      <div class="metric-card bg-white rounded-xl shadow-md p-6 status-good">
-       <div class="flex items-start justify-between mb-4">
-        <div class="bg-orange-100 p-3 rounded-lg"><i class="fas fa-chart-line text-orange-600 text-2xl"></i>
-        </div><span id="gdrBadge" class="badge badge-green">Normal</span>
-       </div>
-       <div class="text-sm font-medium text-gray-600 mb-1">
-        GDR (Gross Death Rate)
-       </div>
-       <div id="gdrValue" class="text-4xl font-bold text-gray-900 mb-2">
-        0.00‰
-       </div>
-       <div class="text-xs text-gray-500">
-        Target: &lt; 45‰
-       </div>
-      </div>
-     </div><!-- Charts Section -->
-     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"><!-- BOR Trend -->
-      <div class="bg-white rounded-xl shadow-md p-6">
-       <h2 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-chart-line text-blue-600 mr-2"></i>Tren BOR (%)</h2>
-       <div class="chart-container">
-        <canvas id="borChart"></canvas>
-       </div>
-      </div><!-- AVLOS & TOI Comparison -->
-      <div class="bg-white rounded-xl shadow-md p-6">
-       <h2 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-chart-bar text-green-600 mr-2"></i>AVLOS &amp; TOI (Hari)</h2>
-       <div class="chart-container">
-        <canvas id="avlosToiChart"></canvas>
-       </div>
-      </div>
-     </div>
-     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"><!-- BTO Chart -->
-      <div class="bg-white rounded-xl shadow-md p-6">
-       <h2 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-sync-alt text-purple-600 mr-2"></i>Tren BTO (Kali)</h2>
-       <div class="chart-container">
-        <canvas id="btoChart"></canvas>
-       </div>
-      </div><!-- Death Rate Pie Chart -->
-      <div class="bg-white rounded-xl shadow-md p-6">
-       <h2 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-chart-pie text-red-600 mr-2"></i>Distribusi Kematian</h2>
-       <div class="chart-container">
-        <canvas id="deathChart"></canvas>
-       </div>
-      </div>
-     </div>
-     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"><!-- NDR & GDR Comparison -->
-      <div class="bg-white rounded-xl shadow-md p-6">
-       <h2 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-chart-area text-red-600 mr-2"></i>Tren NDR &amp; GDR (‰)</h2>
-       <div class="chart-container">
-        <canvas id="deathRateChart"></canvas>
-       </div>
-      </div><!-- Patient Flow -->
-      <div class="bg-white rounded-xl shadow-md p-6">
-       <h2 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-users text-indigo-600 mr-2"></i>Alur Pasien</h2>
-       <div class="chart-container">
-        <canvas id="patientFlowChart"></canvas>
-       </div>
-      </div>
-     </div><!-- Data Table -->
-     <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
-      <div class="px-6 py-4 bg-indigo-600 text-white">
-       <h2 class="text-xl font-bold"><i class="fas fa-table mr-2"></i>Tabel Data Indikator Lengkap</h2>
-      </div>
-      <div class="overflow-x-auto">
-       <table class="w-full text-sm">
-        <thead class="sticky-header text-white">
-         <tr>
-          <th class="px-4 py-3 text-left font-semibold">Periode</th>
-          <th class="px-4 py-3 text-right font-semibold">Pasien Masuk</th>
-          <th class="px-4 py-3 text-right font-semibold">Pasien Keluar</th>
-          <th class="px-4 py-3 text-right font-semibold">Pasien Dirawat</th>
-          <th class="px-4 py-3 text-right font-semibold">Jumlah TT</th>
-          <th class="px-4 py-3 text-right font-semibold">Hari Rawatan</th>
-          <th class="px-4 py-3 text-right font-semibold">Lama Dirawat</th>
-          <th class="px-4 py-3 text-right font-semibold">BOR (%)</th>
-          <th class="px-4 py-3 text-right font-semibold">AVLOS</th>
-          <th class="px-4 py-3 text-right font-semibold">TOI</th>
-          <th class="px-4 py-3 text-right font-semibold">BTO</th>
-          <th class="px-4 py-3 text-right font-semibold">NDR</th>
-          <th class="px-4 py-3 text-right font-semibold">GDR</th>
-         </tr>
-        </thead>
-        <tbody id="dataTable">
-        </tbody>
-       </table>
-      </div>
-     </div>
-    </div>
-   </div><!-- Footer -->
-   <footer class="bg-gray-800 text-white py-6 mt-12">
-    <div class="max-w-7xl mx-auto px-6 text-center">
-     <p id="hospitalNameFooter" class="text-lg font-semibold mb-2">RSUD Drs. H. AMRI TAMBUNAN</p>
-     <p class="text-sm opacity-75">Tahun <span id="footerYear">2025</span></p>
-     <p id="footerNote" class="text-xs opacity-60 mt-2">Data bersumber dari Google Spreadsheet – Sheet Indikator_Pelayanan</p>
-    </div>
-   </footer>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Indikator Pelayanan Rawat Inap</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+body { font-family: Inter, system-ui, sans-serif; }
+.metric-card { transition: .3s; }
+.metric-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,.15); }
+.chart-container { height: 320px; }
+.status-good { border-left: 4px solid #10B981 }
+.status-warning { border-left: 4px solid #F59E0B }
+.status-danger { border-left: 4px solid #EF4444 }
+.badge { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600 }
+.badge-green { background:#D1FAE5;color:#065F46 }
+.badge-yellow { background:#FEF3C7;color:#92400E }
+.badge-red { background:#FEE2E2;color:#991B1B }
+.loading-spinner { border:3px solid #eee;border-top:3px solid #4F46E5;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite }
+@keyframes spin {100%{transform:rotate(360deg)}}
+</style>
+</head>
+
+<body class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+
+<header class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-8">
+  <h1 class="text-4xl font-bold">Dashboard Indikator Pelayanan Rawat Inap</h1>
+  <p class="opacity-90">RSUD Drs. H. AMRI TAMBUNAN</p>
+</header>
+
+<div class="max-w-7xl mx-auto p-6">
+
+<div class="bg-white p-6 rounded-xl shadow mb-6 flex gap-4 items-end">
+  <div>
+    <label class="font-semibold text-sm">Periode</label>
+    <select id="periodeFilter" class="border rounded-lg px-4 py-2">
+      <option value="all">Semua Periode</option>
+    </select>
   </div>
-  <script>
-        const defaultConfig = {
-            dashboard_title: "Dashboard Indikator Pelayanan Rawat Inap",
-            hospital_name: "RSUD Drs. H. AMRI TAMBUNAN",
-            data_source: "Google Sheet – Indikator_Pelayanan",
-            footer_note: "Data bersumber dari Google Spreadsheet – Sheet Indikator_Pelayanan"
-        };
+  <button onclick="location.reload()" class="ml-auto bg-indigo-600 text-white px-6 py-2 rounded-lg">
+    <i class="fas fa-sync mr-2"></i>Refresh
+  </button>
+</div>
 
-        const config = window.elementSdk?.config || { ...defaultConfig };
+<div id="loading" class="flex items-center gap-3 py-10 justify-center">
+  <div class="loading-spinner"></div>
+  <span>Memuat data...</span>
+</div>
 
-        // Google Sheets CSV URL - menggunakan CORS proxy
-        const SHEET_ID = '2PACX-1vT28IN0XIYUAf7Q5W7z8ew86twsfpgSEeXocKTVkjnx8zrZvj29LQAyacLy6MrXqRmxaEjdlbLud8bP';
-        const CSV_URL = `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?gid=0&single=true&output=csv`;
-        
-        // Alternative: gunakan CORS proxy jika direct access gagal
-        const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
-        
-        let rawData = [];
-        let filteredData = [];
-        let charts = {};
+<div id="content" style="display:none">
 
-        // Parse angka format Indonesia (contoh: 1.234,56 menjadi 1234.56)
-        function parseIndonesianNumber(value) {
-            if (typeof value !== 'string') return value;
-            
-            // Hapus whitespace
-            value = value.trim();
-            
-            // Jika sudah berupa angka biasa, langsung parse
-            if (/^-?\d+(\.\d+)?$/.test(value)) {
-                return parseFloat(value);
-            }
-            
-            // Konversi format Indonesia: hapus titik (pemisah ribuan), ganti koma dengan titik (desimal)
-            const cleaned = value.replace(/\./g, '').replace(',', '.');
-            const numValue = parseFloat(cleaned);
-            
-            return isNaN(numValue) ? value : numValue;
-        }
-        
-        // Parse CSV data with better handling
-        function parseCSV(csvText) {
-            const lines = csvText.trim().split('\n');
-            if (lines.length < 2) return [];
-            
-            // Parse header
-            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-            
-            const data = [];
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
-                
-                // Better CSV parsing that handles quoted values
-                const values = [];
-                let current = '';
-                let inQuotes = false;
-                
-                for (let char of lines[i]) {
-                    if (char === '"') {
-                        inQuotes = !inQuotes;
-                    } else if (char === ',' && !inQuotes) {
-                        values.push(current.trim());
-                        current = '';
-                    } else {
-                        current += char;
-                    }
-                }
-                values.push(current.trim());
-                
-                if (values.length < headers.length) continue;
-                
-                const row = {};
-                headers.forEach((header, index) => {
-                    const value = values[index] ? values[index].replace(/^"|"$/g, '') : '';
-                    // Convert to number using Indonesian format parser
-                    row[header] = parseIndonesianNumber(value);
-                });
-                data.push(row);
-            }
-            return data;
-        }
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+  <div class="metric-card bg-white p-6 rounded-xl shadow status-good">
+    <span id="borBadge" class="badge badge-green">Normal</span>
+    <div class="text-3xl font-bold" id="borValue">0%</div>
+    <div class="text-sm text-gray-500">BOR</div>
+  </div>
 
-        // Fetch data from Google Sheets CSV
-        async function fetchGoogleSheetData() {
-            // Try direct access first
-            try {
-                const response = await fetch(CSV_URL, {
-                    method: 'GET',
-                    mode: 'cors',
-                    cache: 'no-cache'
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const csvText = await response.text();
-                
-                if (!csvText || csvText.length < 10) {
-                    throw new Error('Empty or invalid CSV data');
-                }
-                
-                const parsedData = parseCSV(csvText);
-                
-                if (parsedData.length === 0) {
-                    throw new Error('No data parsed from CSV');
-                }
-                
-                return mapDataColumns(parsedData);
-                
-            } catch (directError) {
-                console.error('Direct fetch failed:', directError);
-                
-                // Try with CORS proxy
-                try {
-                    const proxyUrl = CORS_PROXY + encodeURIComponent(CSV_URL);
-                    const response = await fetch(proxyUrl, {
-                        method: 'GET',
-                        cache: 'no-cache'
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`Proxy HTTP error! status: ${response.status}`);
-                    }
-                    
-                    const csvText = await response.text();
-                    
-                    if (!csvText || csvText.length < 10) {
-                        throw new Error('Empty CSV from proxy');
-                    }
-                    
-                    const parsedData = parseCSV(csvText);
-                    
-                    if (parsedData.length === 0) {
-                        throw new Error('No data parsed via proxy');
-                    }
-                    
-                    return mapDataColumns(parsedData);
-                    
-                } catch (proxyError) {
-                    console.error('Proxy fetch also failed:', proxyError);
-                    showNotification('Tidak dapat mengakses Google Sheet. Pastikan sheet sudah dipublish ke web.', 'error');
-                    return [];
-                }
-            }
-        }
-        
-        // Map column names from CSV to internal format
-        function mapDataColumns(parsedData) {
-            return parsedData.map(row => ({
-                periode: row['Periode'] || row['periode'] || '',
-                pasien_masuk: parseIndonesianNumber(row['Pasien Masuk'] || row['pasien_masuk'] || 0),
-                pasien_keluar: parseIndonesianNumber(row['Pasien Keluar'] || row['pasien_keluar'] || 0),
-                pasien_dirawat: parseIndonesianNumber(row['Jumlah Pasien Dirawat'] || row['pasien_dirawat'] || 0),
-                jumlah_tt: parseIndonesianNumber(row['Jumlah TT'] || row['jumlah_tt'] || 0),
-                jumlah_hari: parseIndonesianNumber(row['Jumlah Hari'] || row['jumlah_hari'] || 0),
-                hari_rawatan: parseIndonesianNumber(row['Hari Rawatan'] || row['hari_rawatan'] || 0),
-                lama_dirawat: parseIndonesianNumber(row['Lama Dirawat'] || row['lama_dirawat'] || 0),
-                meninggal_48: parseIndonesianNumber(row['Pasien Meninggal ≥ 48 jam'] || row['meninggal_48'] || 0),
-                meninggal_kurang_48: parseIndonesianNumber(row['Pasien Meninggal < 48 jam'] || row['meninggal_kurang_48'] || 0),
-                pasien_meninggal: parseIndonesianNumber(row['Jumlah Pasien Meninggal'] || row['pasien_meninggal'] || 0),
-                bor: parseIndonesianNumber(row['BOR (%)'] || row['bor'] || 0),
-                avlos: parseIndonesianNumber(row['AVLOS (hari)'] || row['avlos'] || 0),
-                toi: parseIndonesianNumber(row['TOI (hari)'] || row['toi'] || 0),
-                bto: parseIndonesianNumber(row['BTO (kali)'] || row['bto'] || 0),
-                ndr: parseIndonesianNumber(row['NDR (‰)'] || row['ndr'] || 0),
-                gdr: parseIndonesianNumber(row['GDR (‰)'] || row['gdr'] || 0)
-            })).filter(row => row.periode); // Filter out empty rows
-        }
+  <div class="metric-card bg-white p-6 rounded-xl shadow status-good">
+    <span id="avlosBadge" class="badge badge-green">Normal</span>
+    <div class="text-3xl font-bold" id="avlosValue">0</div>
+    <div class="text-sm text-gray-500">AVLOS</div>
+  </div>
 
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 ${
-                type === 'error' ? 'bg-red-600' : 'bg-indigo-600'
-            }`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                notification.style.transition = 'opacity 0.5s';
-                setTimeout(() => notification.remove(), 500);
-            }, 3000);
-        }
+  <div class="metric-card bg-white p-6 rounded-xl shadow status-good">
+    <span id="toiBadge" class="badge badge-green">Normal</span>
+    <div class="text-3xl font-bold" id="toiValue">0</div>
+    <div class="text-sm text-gray-500">TOI</div>
+  </div>
+</div>
 
-        function getStatus(value, min, max, higherIsBetter = true) {
-            if (higherIsBetter) {
-                if (value >= min && value <= max) return { status: 'good', badge: 'badge-green', text: 'Normal' };
-                if (value < min * 0.8 || value > max * 1.2) return { status: 'danger', badge: 'badge-red', text: 'Bahaya' };
-                return { status: 'warning', badge: 'badge-yellow', text: 'Waspada' };
-            } else {
-                if (value <= max) return { status: 'good', badge: 'badge-green', text: 'Normal' };
-                if (value > max * 1.5) return { status: 'danger', badge: 'badge-red', text: 'Bahaya' };
-                return { status: 'warning', badge: 'badge-yellow', text: 'Waspada' };
-            }
-        }
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+  <div class="metric-card bg-white p-6 rounded-xl shadow status-good">
+    <span id="btoBadge" class="badge badge-green">Normal</span>
+    <div class="text-3xl font-bold" id="btoValue">0</div>
+    <div class="text-sm text-gray-500">BTO (≥3,3/bln)</div>
+  </div>
 
-        function updateMetricCards(data) {
-            if (data.length === 0) return;
+  <div class="metric-card bg-white p-6 rounded-xl shadow status-good">
+    <span id="ndrBadge" class="badge badge-green">Normal</span>
+    <div class="text-3xl font-bold" id="ndrValue">0‰</div>
+    <div class="text-sm text-gray-500">NDR</div>
+  </div>
 
-            const avgOrSingle = (metric) => {
-                if (data.length === 1) return data[0][metric];
-                return data.reduce((sum, d) => sum + d[metric], 0) / data.length;
-            };
+  <div class="metric-card bg-white p-6 rounded-xl shadow status-good">
+    <span id="gdrBadge" class="badge badge-green">Normal</span>
+    <div class="text-3xl font-bold" id="gdrValue">0‰</div>
+    <div class="text-sm text-gray-500">GDR</div>
+  </div>
+</div>
 
-            const bor = avgOrSingle('bor');
-            const avlos = avgOrSingle('avlos');
-            const toi = avgOrSingle('toi');
-            const bto = avgOrSingle('bto');
-            const ndr = avgOrSingle('ndr');
-            const gdr = avgOrSingle('gdr');
+<div class="bg-white p-6 rounded-xl shadow mb-6">
+  <canvas id="borChart"></canvas>
+</div>
 
-            // Update values
-            document.getElementById('borValue').textContent = bor.toFixed(2) + '%';
-            document.getElementById('avlosValue').textContent = avlos.toFixed(2);
-            document.getElementById('toiValue').textContent = toi.toFixed(2);
-            document.getElementById('btoValue').textContent = bto.toFixed(2);
-            document.getElementById('ndrValue').textContent = ndr.toFixed(2) + '‰';
-            document.getElementById('gdrValue').textContent = gdr.toFixed(2) + '‰';
+<div class="bg-white p-6 rounded-xl shadow overflow-x-auto">
+<table class="w-full text-sm">
+<thead class="bg-indigo-600 text-white">
+<tr>
+<th class="p-2">Periode</th>
+<th class="p-2">BOR</th>
+<th class="p-2">AVLOS</th>
+<th class="p-2">TOI</th>
+<th class="p-2">BTO</th>
+<th class="p-2">NDR</th>
+<th class="p-2">GDR</th>
+</tr>
+</thead>
+<tbody id="dataTable"></tbody>
+</table>
+</div>
 
-            // Update badges and card borders
-            const borStatus = getStatus(bor, 60, 85);
-            const avlosStatus = getStatus(avlos, 3, 9);
-            const toiStatus = getStatus(toi, 1, 3);
-            const btoStatus = bto >= 40 ? { status: 'good', badge: 'badge-green', text: 'Normal' } : { status: 'warning', badge: 'badge-yellow', text: 'Rendah' };
-            const ndrStatus = getStatus(ndr, 0, 25, false);
-            const gdrStatus = getStatus(gdr, 0, 45, false);
+</div>
+</div>
 
-            updateCardStatus('bor', borStatus);
-            updateCardStatus('avlos', avlosStatus);
-            updateCardStatus('toi', toiStatus);
-            updateCardStatus('bto', btoStatus);
-            updateCardStatus('ndr', ndrStatus);
-            updateCardStatus('gdr', gdrStatus);
+<script>
+const SHEET_ID = "2PACX-1vT28IN0XIYUAf7Q5W7z8ew86twsfpgSEeXocKTVkjnx8zrZvj29LQAyacLy6MrXqRmxaEjdlbLud8bP";
+const CSV_URL = `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?output=csv`;
 
-            // Update insights
-            updateInsights({ bor, avlos, toi, bto, ndr, gdr });
-        }
+let rawData=[], chart;
 
-        function updateCardStatus(metric, status) {
-            const badge = document.getElementById(metric + 'Badge');
-            const card = badge.closest('.metric-card');
-            
-            badge.className = `badge ${status.badge}`;
-            badge.textContent = status.text;
-            
-            card.className = card.className.replace(/status-\w+/, `status-${status.status}`);
-        }
+function num(v){
+  if(!v) return 0;
+  return parseFloat(v.toString().replace(/\./g,'').replace(',','.'))||0;
+}
 
-        function updateInsights(metrics) {
-            const insights = [];
-            insights.push('📊 Standar Ideal: BOR (60-85%) | AVLOS (3-9 hari) | TOI (1-3 hari) | BTO (≥40 kali/tahun)');
-            
-            if (metrics.bor > 100) insights.push('⚠️ BOR > 100%: Kapasitas berlebih, perlu penambahan tempat tidur');
-            if (metrics.bor < 60) insights.push('💡 BOR < 60%: Utilisasi rendah, optimalkan pemasaran layanan');
-            if (metrics.toi < 0) insights.push('🚨 TOI negatif: Sistem pencatatan perlu evaluasi');
-            if (metrics.ndr > 25) insights.push('🚨 NDR tinggi: Perlu evaluasi kualitas pelayanan rawat inap');
-            if (metrics.gdr > 45) insights.push('🚨 GDR tinggi: Perhatikan sistem rujukan dan triase');
-            if (metrics.bto < 40) insights.push('💡 BTO rendah: Tingkatkan efisiensi penggunaan tempat tidur');
-            
-            if (insights.length === 1) insights.push('✅ Semua indikator dalam batas normal');
-            
-            document.getElementById('insightContent').innerHTML = insights.map(i => `<p>${i}</p>`).join('');
-        }
+function status(metric,min,max,reverse=false){
+  if(reverse){
+    if(metric<=max) return ['good','badge-green','Normal'];
+    if(metric>max*1.5) return ['danger','badge-red','Bahaya'];
+    return ['warning','badge-yellow','Waspada'];
+  }
+  if(metric>=min && metric<=max) return ['good','badge-green','Normal'];
+  if(metric<min||metric>max) return ['warning','badge-yellow','Waspada'];
+  return ['danger','badge-red','Bahaya'];
+}
 
-        function createCharts(data) {
-            const labels = data.map(d => d.periode);
+fetch(CSV_URL)
+.then(r=>r.text())
+.then(csv=>{
+  Papa.parse(csv,{
+    header:true,
+    skipEmptyLines:true,
+    complete:res=>{
+      rawData=res.data.map(r=>({
+        periode:r.Periode,
+        bor:num(r.BOR),
+        avlos:num(r.AVLOS),
+        toi:num(r.TOI),
+        bto:num(r.BTO),
+        ndr:num(r.NDR),
+        gdr:num(r.GDR)
+      }));
+      init();
+    }
+  })
+});
 
-            // BOR Chart
-            if (charts.bor) charts.bor.destroy();
-            charts.bor = new Chart(document.getElementById('borChart'), {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'BOR (%)',
-                        data: data.map(d => d.bor),
-                        borderColor: '#3B82F6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 4,
-                        pointHoverRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'top' },
-                        tooltip: { mode: 'index', intersect: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
+function init(){
+  document.getElementById('loading').style.display='none';
+  document.getElementById('content').style.display='block';
 
-            // AVLOS & TOI Chart
-            if (charts.avlosToi) charts.avlosToi.destroy();
-            charts.avlosToi = new Chart(document.getElementById('avlosToiChart'), {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'AVLOS (Hari)',
-                            data: data.map(d => d.avlos),
-                            backgroundColor: '#10B981'
-                        },
-                        {
-                            label: 'TOI (Hari)',
-                            data: data.map(d => d.toi),
-                            backgroundColor: '#14B8A6'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'top' }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
+  const select=document.getElementById('periodeFilter');
+  [...new Set(rawData.map(d=>d.periode))].forEach(p=>{
+    select.innerHTML+=`<option>${p}</option>`;
+  });
+  select.onchange=render;
+  render();
+}
 
-            // BTO Chart
-            if (charts.bto) charts.bto.destroy();
-            charts.bto = new Chart(document.getElementById('btoChart'), {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'BTO (Kali)',
-                        data: data.map(d => d.bto),
-                        backgroundColor: '#8B5CF6'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'top' }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
+function render(){
+  const p=document.getElementById('periodeFilter').value;
+  const data=p==='all'?rawData:rawData.filter(d=>d.periode===p);
+  const avg=k=>data.reduce((a,b)=>a+b[k],0)/data.length;
 
-            // Death Distribution Pie Chart
-            const totalMeninggal48 = data.reduce((sum, d) => sum + d.meninggal_48, 0);
-            const totalMeninggalKurang48 = data.reduce((sum, d) => sum + d.meninggal_kurang_48, 0);
-            
-            if (charts.death) charts.death.destroy();
-            charts.death = new Chart(document.getElementById('deathChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Meninggal ≥ 48 Jam', 'Meninggal < 48 Jam'],
-                    datasets: [{
-                        data: [totalMeninggal48, totalMeninggalKurang48],
-                        backgroundColor: ['#EF4444', '#F97316']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'bottom' }
-                    }
-                }
-            });
+  const metrics={
+    bor:avg('bor'),
+    avlos:avg('avlos'),
+    toi:avg('toi'),
+    bto:avg('bto'),
+    ndr:avg('ndr'),
+    gdr:avg('gdr')
+  };
 
-            // NDR & GDR Chart
-            if (charts.deathRate) charts.deathRate.destroy();
-            charts.deathRate = new Chart(document.getElementById('deathRateChart'), {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'NDR (‰)',
-                            data: data.map(d => d.ndr),
-                            borderColor: '#EF4444',
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        },
-                        {
-                            label: 'GDR (‰)',
-                            data: data.map(d => d.gdr),
-                            borderColor: '#F97316',
-                            backgroundColor: 'rgba(249, 115, 22, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'top' }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
+  document.getElementById('borValue').innerText=metrics.bor.toFixed(2)+'%';
+  document.getElementById('avlosValue').innerText=metrics.avlos.toFixed(2);
+  document.getElementById('toiValue').innerText=metrics.toi.toFixed(2);
+  document.getElementById('btoValue').innerText=metrics.bto.toFixed(2);
+  document.getElementById('ndrValue').innerText=metrics.ndr.toFixed(2)+'‰';
+  document.getElementById('gdrValue').innerText=metrics.gdr.toFixed(2)+'‰';
 
-            // Patient Flow Chart
-            if (charts.patientFlow) charts.patientFlow.destroy();
-            charts.patientFlow = new Chart(document.getElementById('patientFlowChart'), {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Pasien Masuk',
-                            data: data.map(d => d.pasien_masuk),
-                            borderColor: '#4F46E5',
-                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        },
-                        {
-                            label: 'Pasien Keluar',
-                            data: data.map(d => d.pasien_keluar),
-                            borderColor: '#10B981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'top' }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-        }
+  updateCard('bor',status(metrics.bor,60,85));
+  updateCard('avlos',status(metrics.avlos,3,9));
+  updateCard('toi',status(metrics.toi,1,3));
+  updateCard('bto',metrics.bto>=3.3?['good','badge-green','Normal']:['warning','badge-yellow','Rendah']);
+  updateCard('ndr',status(metrics.ndr,0,25,true));
+  updateCard('gdr',status(metrics.gdr,0,45,true));
 
-        function updateTable(data) {
-            const tbody = document.getElementById('dataTable');
-            tbody.innerHTML = '';
-            
-            data.forEach((row, index) => {
-                const tr = document.createElement('tr');
-                tr.className = index % 2 === 0 ? 'bg-gray-50' : 'bg-white';
-                tr.innerHTML = `
-                    <td class="px-4 py-3 text-left font-medium text-gray-900">${row.periode}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">${row.pasien_masuk.toLocaleString()}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">${row.pasien_keluar.toLocaleString()}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">${row.pasien_dirawat.toLocaleString()}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">${row.jumlah_tt.toLocaleString()}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">${row.hari_rawatan.toLocaleString()}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">${row.lama_dirawat.toLocaleString()}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">${row.bor.toFixed(2)}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">${row.avlos.toFixed(2)}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">${row.toi.toFixed(2)}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">${row.bto.toFixed(2)}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">${row.ndr.toFixed(2)}</td>
-                    <td class="px-4 py-3 text-right text-gray-700">${row.gdr.toFixed(2)}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+  drawChart(data);
+  fillTable(data);
+}
 
-        function populateFilters() {
-            const periodeFilter = document.getElementById('periodeFilter');
-            periodeFilter.innerHTML = '<option value="all">Semua Periode</option>';
-            rawData.forEach(row => {
-                const option = document.createElement('option');
-                option.value = row.periode;
-                option.textContent = row.periode;
-                periodeFilter.appendChild(option);
-            });
+function updateCard(id,[s,b,t]){
+  const badge=document.getElementById(id+'Badge');
+  const card=badge.closest('.metric-card');
+  badge.className=`badge ${b}`;
+  badge.innerText=t;
+  card.classList.remove('status-good','status-warning','status-danger');
+  card.classList.add(`status-${s}`);
+}
 
-            // Update last period
-            if (rawData.length > 0) {
-                document.getElementById('lastPeriod').textContent = rawData[rawData.length - 1].periode;
-            }
-        }
+function drawChart(data){
+  if(chart) chart.destroy();
+  chart=new Chart(borChart,{
+    type:'line',
+    data:{
+      labels:data.map(d=>d.periode),
+      datasets:[{label:'BOR',data:data.map(d=>d.bor),borderColor:'#3B82F6',fill:true}]
+    }
+  });
+}
 
-        function filterData() {
-            const periodeFilter = document.getElementById('periodeFilter').value;
+function fillTable(data){
+  const tb=document.getElementById('dataTable');
+  tb.innerHTML='';
+  data.forEach(d=>{
+    tb.innerHTML+=`
+    <tr>
+      <td class="p-2">${d.periode}</td>
+      <td class="p-2 text-right">${d.bor.toFixed(2)}</td>
+      <td class="p-2 text-right">${d.avlos.toFixed(2)}</td>
+      <td class="p-2 text-right">${d.toi.toFixed(2)}</td>
+      <td class="p-2 text-right">${d.bto.toFixed(2)}</td>
+      <td class="p-2 text-right">${d.ndr.toFixed(2)}</td>
+      <td class="p-2 text-right">${d.gdr.toFixed(2)}</td>
+    </tr>`;
+  });
+}
+</script>
 
-            let filtered = [...rawData];
-
-            // Filter by periode only
-            if (periodeFilter !== 'all') {
-                filtered = filtered.filter(d => d.periode === periodeFilter);
-            }
-
-            filteredData = filtered;
-            updateMetricCards(filteredData);
-            createCharts(filteredData);
-            updateTable(filteredData);
-        }
-
-        // Event listeners
-        document.getElementById('periodeFilter').addEventListener('change', filterData);
-        document.getElementById('refreshBtn').addEventListener('click', () => {
-            location.reload();
-        });
-
-        async function onConfigChange(newConfig) {
-            document.getElementById('dashboardTitle').textContent = newConfig.dashboard_title || defaultConfig.dashboard_title;
-            document.getElementById('hospitalName').textContent = newConfig.hospital_name || defaultConfig.hospital_name;
-            document.getElementById('dataSource').textContent = 'Sumber Data: ' + (newConfig.data_source || defaultConfig.data_source);
-            document.getElementById('hospitalNameFooter').textContent = newConfig.hospital_name || defaultConfig.hospital_name;
-            document.getElementById('footerNote').textContent = newConfig.footer_note || defaultConfig.footer_note;
-        }
-
-        if (window.elementSdk) {
-            window.elementSdk.init({
-                defaultConfig: defaultConfig,
-                onConfigChange: onConfigChange,
-                mapToCapabilities: (config) => ({
-                    recolorables: [],
-                    borderables: [],
-                    fontEditable: undefined,
-                    fontSizeable: undefined
-                }),
-                mapToEditPanelValues: (config) => new Map([
-                    ["dashboard_title", config.dashboard_title || defaultConfig.dashboard_title],
-                    ["hospital_name", config.hospital_name || defaultConfig.hospital_name],
-                    ["data_source", config.data_source || defaultConfig.data_source],
-                    ["footer_note", config.footer_note || defaultConfig.footer_note]
-                ])
-            });
-        }
-
-        // Initialize
-        async function initDashboard() {
-            rawData = await fetchGoogleSheetData();
-            
-            if (rawData.length === 0) {
-                document.getElementById('loadingIndicator').innerHTML = '<p class="text-red-600">Gagal memuat data. Silakan refresh halaman.</p>';
-                return;
-            }
-
-            filteredData = [...rawData];
-            
-            document.getElementById('loadingIndicator').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'block';
-            
-            populateFilters();
-            filterData();
-            
-            const currentYear = new Date().getFullYear();
-            document.getElementById('footerYear').textContent = currentYear;
-            
-            showNotification('Dashboard berhasil dimuat!', 'info');
-        }
-        
-        initDashboard();
-    </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b90f8b405f8b7c5',t:'MTc2NzU5NTA5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
