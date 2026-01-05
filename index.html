@@ -307,6 +307,25 @@
         let filteredData = [];
         let charts = {};
 
+        // Parse angka format Indonesia (contoh: 1.234,56 menjadi 1234.56)
+        function parseIndonesianNumber(value) {
+            if (typeof value !== 'string') return value;
+            
+            // Hapus whitespace
+            value = value.trim();
+            
+            // Jika sudah berupa angka biasa, langsung parse
+            if (/^-?\d+(\.\d+)?$/.test(value)) {
+                return parseFloat(value);
+            }
+            
+            // Konversi format Indonesia: hapus titik (pemisah ribuan), ganti koma dengan titik (desimal)
+            const cleaned = value.replace(/\./g, '').replace(',', '.');
+            const numValue = parseFloat(cleaned);
+            
+            return isNaN(numValue) ? value : numValue;
+        }
+        
         // Parse CSV data with better handling
         function parseCSV(csvText) {
             const lines = csvText.trim().split('\n');
@@ -341,9 +360,8 @@
                 const row = {};
                 headers.forEach((header, index) => {
                     const value = values[index] ? values[index].replace(/^"|"$/g, '') : '';
-                    // Convert to number if possible
-                    const numValue = parseFloat(value);
-                    row[header] = isNaN(numValue) ? value : numValue;
+                    // Convert to number using Indonesian format parser
+                    row[header] = parseIndonesianNumber(value);
                 });
                 data.push(row);
             }
@@ -419,22 +437,22 @@
         function mapDataColumns(parsedData) {
             return parsedData.map(row => ({
                 periode: row['Periode'] || row['periode'] || '',
-                pasien_masuk: parseFloat(row['Pasien Masuk'] || row['pasien_masuk'] || 0),
-                pasien_keluar: parseFloat(row['Pasien Keluar'] || row['pasien_keluar'] || 0),
-                pasien_dirawat: parseFloat(row['Jumlah Pasien Dirawat'] || row['pasien_dirawat'] || 0),
-                jumlah_tt: parseFloat(row['Jumlah TT'] || row['jumlah_tt'] || 0),
-                jumlah_hari: parseFloat(row['Jumlah Hari'] || row['jumlah_hari'] || 0),
-                hari_rawatan: parseFloat(row['Hari Rawatan'] || row['hari_rawatan'] || 0),
-                lama_dirawat: parseFloat(row['Lama Dirawat'] || row['lama_dirawat'] || 0),
-                meninggal_48: parseFloat(row['Pasien Meninggal ≥ 48 jam'] || row['meninggal_48'] || 0),
-                meninggal_kurang_48: parseFloat(row['Pasien Meninggal < 48 jam'] || row['meninggal_kurang_48'] || 0),
-                pasien_meninggal: parseFloat(row['Jumlah Pasien Meninggal'] || row['pasien_meninggal'] || 0),
-                bor: parseFloat(row['BOR (%)'] || row['bor'] || 0),
-                avlos: parseFloat(row['AVLOS (hari)'] || row['avlos'] || 0),
-                toi: parseFloat(row['TOI (hari)'] || row['toi'] || 0),
-                bto: parseFloat(row['BTO (kali)'] || row['bto'] || 0),
-                ndr: parseFloat(row['NDR (‰)'] || row['ndr'] || 0),
-                gdr: parseFloat(row['GDR (‰)'] || row['gdr'] || 0)
+                pasien_masuk: parseIndonesianNumber(row['Pasien Masuk'] || row['pasien_masuk'] || 0),
+                pasien_keluar: parseIndonesianNumber(row['Pasien Keluar'] || row['pasien_keluar'] || 0),
+                pasien_dirawat: parseIndonesianNumber(row['Jumlah Pasien Dirawat'] || row['pasien_dirawat'] || 0),
+                jumlah_tt: parseIndonesianNumber(row['Jumlah TT'] || row['jumlah_tt'] || 0),
+                jumlah_hari: parseIndonesianNumber(row['Jumlah Hari'] || row['jumlah_hari'] || 0),
+                hari_rawatan: parseIndonesianNumber(row['Hari Rawatan'] || row['hari_rawatan'] || 0),
+                lama_dirawat: parseIndonesianNumber(row['Lama Dirawat'] || row['lama_dirawat'] || 0),
+                meninggal_48: parseIndonesianNumber(row['Pasien Meninggal ≥ 48 jam'] || row['meninggal_48'] || 0),
+                meninggal_kurang_48: parseIndonesianNumber(row['Pasien Meninggal < 48 jam'] || row['meninggal_kurang_48'] || 0),
+                pasien_meninggal: parseIndonesianNumber(row['Jumlah Pasien Meninggal'] || row['pasien_meninggal'] || 0),
+                bor: parseIndonesianNumber(row['BOR (%)'] || row['bor'] || 0),
+                avlos: parseIndonesianNumber(row['AVLOS (hari)'] || row['avlos'] || 0),
+                toi: parseIndonesianNumber(row['TOI (hari)'] || row['toi'] || 0),
+                bto: parseIndonesianNumber(row['BTO (kali)'] || row['bto'] || 0),
+                ndr: parseIndonesianNumber(row['NDR (‰)'] || row['ndr'] || 0),
+                gdr: parseIndonesianNumber(row['GDR (‰)'] || row['gdr'] || 0)
             })).filter(row => row.periode); // Filter out empty rows
         }
 
@@ -835,5 +853,5 @@
         
         initDashboard();
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b90e8c9630ec031',t:'MTc2NzU5NDQ0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b90f8b405f8b7c5',t:'MTc2NzU5NTA5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
