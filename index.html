@@ -84,6 +84,80 @@
       font-weight: 700;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
     }
+
+    .chart-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .chart-action-btn {
+      padding: 6px 12px;
+      background: white;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chart-action-btn:hover {
+      background: #f3f4f6;
+      border-color: #3b82f6;
+      color: #3b82f6;
+    }
+
+    @media (max-width: 1024px) {
+      .px-8 { padding-left: 1rem; padding-right: 1rem; }
+      .py-6 { padding-top: 1rem; padding-bottom: 1rem; }
+    }
+
+    @media (max-width: 768px) {
+      .px-8 { padding-left: 0.75rem; padding-right: 0.75rem; }
+      .py-6 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+      
+      .tab-button {
+        font-size: 0.875rem;
+        padding: 0.75rem 1rem;
+      }
+
+      .chart-container {
+        padding: 1rem !important;
+      }
+
+      .chart-action-btn {
+        font-size: 11px;
+        padding: 5px 10px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      h1 { font-size: 1.5rem !important; }
+      h2 { font-size: 1.25rem !important; }
+      
+      .metric-card {
+        padding: 1rem !important;
+      }
+
+      .quick-filter-btn {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
+      }
+
+      #data-table {
+        font-size: 0.75rem;
+      }
+
+      #data-table th,
+      #data-table td {
+        padding: 0.5rem !important;
+      }
+    }
   </style>
   <style>@view-transition { navigation: auto; }</style>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
@@ -106,14 +180,16 @@
     </div>
    </div><!-- Header -->
    <header class="px-8 py-6" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
      <div>
       <h1 id="dashboard-title" class="text-3xl font-bold text-white mb-1">Dashboard Indikator Kinerja Rawat Inap</h1>
       <p id="hospital-name" class="text-lg text-blue-100">RSUD Drs. H. AMRI TAMBUNAN</p>
      </div>
-     <div class="text-right">
-      <p id="period-label" class="text-sm text-blue-100 mb-1">Periode Laporan:</p>
-      <p id="current-period" class="text-xl font-semibold text-white">Memuat data...</p>
+     <div class="flex flex-col items-end gap-3">
+      <div class="text-right">
+       <p id="period-label" class="text-sm text-blue-100 mb-1">Periode Laporan:</p>
+       <p id="current-period" class="text-xl font-semibold text-white">Memuat data...</p>
+      </div><button id="export-pdf-btn" class="px-6 py-3 bg-white text-blue-600 rounded-lg font-bold hover:bg-blue-50 transition-all duration-200 shadow-lg flex items-center gap-2"> 📄 Export Dashboard ke PDF </button>
      </div>
     </div><!-- Filter Dashboard Utama -->
     <div id="dashboard-filters" class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur-sm">
@@ -241,24 +317,32 @@
      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><!-- Grafik BOR -->
       <div class="chart-container bg-white rounded-xl shadow-md p-6">
        <h3 class="text-lg font-bold text-gray-800 mb-4">BOR (%)</h3>
+       <div class="chart-actions"><button class="chart-action-btn" onclick="exportChartImage('bor-chart', 'BOR_Chart')"> 📊 PNG </button> <button class="chart-action-btn" onclick="exportChartSVG('bor-chart', 'BOR_Chart')"> 🖼️ SVG </button> <button class="chart-action-btn" onclick="exportChartData('bor')"> 📥 CSV </button>
+       </div>
        <div style="height: 320px;">
         <canvas id="bor-chart"></canvas>
        </div>
       </div><!-- Grafik AVLOS -->
       <div class="chart-container bg-white rounded-xl shadow-md p-6">
        <h3 class="text-lg font-bold text-gray-800 mb-4">AVLOS (Hari)</h3>
+       <div class="chart-actions"><button class="chart-action-btn" onclick="exportChartImage('avlos-chart', 'AVLOS_Chart')"> 📊 PNG </button> <button class="chart-action-btn" onclick="exportChartSVG('avlos-chart', 'AVLOS_Chart')"> 🖼️ SVG </button> <button class="chart-action-btn" onclick="exportChartData('avlos')"> 📥 CSV </button>
+       </div>
        <div style="height: 320px;">
         <canvas id="avlos-chart"></canvas>
        </div>
       </div><!-- Grafik TOI -->
       <div class="chart-container bg-white rounded-xl shadow-md p-6">
        <h3 class="text-lg font-bold text-gray-800 mb-4">TOI (Hari)</h3>
+       <div class="chart-actions"><button class="chart-action-btn" onclick="exportChartImage('toi-chart', 'TOI_Chart')"> 📊 PNG </button> <button class="chart-action-btn" onclick="exportChartSVG('toi-chart', 'TOI_Chart')"> 🖼️ SVG </button> <button class="chart-action-btn" onclick="exportChartData('toi')"> 📥 CSV </button>
+       </div>
        <div style="height: 320px;">
         <canvas id="toi-chart"></canvas>
        </div>
       </div><!-- Grafik BTO -->
       <div class="chart-container bg-white rounded-xl shadow-md p-6">
        <h3 class="text-lg font-bold text-gray-800 mb-4">BTO (Kali)</h3>
+       <div class="chart-actions"><button class="chart-action-btn" onclick="exportChartImage('bto-chart', 'BTO_Chart')"> 📊 PNG </button> <button class="chart-action-btn" onclick="exportChartSVG('bto-chart', 'BTO_Chart')"> 🖼️ SVG </button> <button class="chart-action-btn" onclick="exportChartData('bto')"> 📥 CSV </button>
+       </div>
        <div style="height: 320px;">
         <canvas id="bto-chart"></canvas>
        </div>
@@ -296,6 +380,8 @@
      </div>
      <div class="chart-container bg-white rounded-xl shadow-md p-6">
       <h3 class="text-lg font-bold text-gray-800 mb-4">Tren Pasien</h3>
+      <div class="chart-actions"><button class="chart-action-btn" onclick="exportChartImage('patient-monthly-chart', 'Tren_Pasien')"> 📊 PNG </button> <button class="chart-action-btn" onclick="exportChartSVG('patient-monthly-chart', 'Tren_Pasien')"> 🖼️ SVG </button> <button class="chart-action-btn" onclick="exportChartData('patient')"> 📥 CSV </button>
+      </div>
       <div style="height: 400px;">
        <canvas id="patient-monthly-chart"></canvas>
       </div>
@@ -324,12 +410,16 @@
      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><!-- BOR vs Jumlah Pasien -->
       <div class="chart-container bg-white rounded-xl shadow-md p-6">
        <h3 class="text-lg font-bold text-gray-800 mb-4">BOR vs Jumlah Pasien Dirawat</h3>
+       <div class="chart-actions"><button class="chart-action-btn" onclick="exportChartImage('bor-patient-chart', 'BOR_vs_Pasien')"> 📊 PNG </button> <button class="chart-action-btn" onclick="exportChartSVG('bor-patient-chart', 'BOR_vs_Pasien')"> 🖼️ SVG </button> <button class="chart-action-btn" onclick="exportChartData('borpatient')"> 📥 CSV </button>
+       </div>
        <div style="height: 320px;">
         <canvas id="bor-patient-chart"></canvas>
        </div>
       </div><!-- Hari Rawatan -->
       <div class="chart-container bg-white rounded-xl shadow-md p-6">
        <h3 class="text-lg font-bold text-gray-800 mb-4">Tren Hari Rawatan</h3>
+       <div class="chart-actions"><button class="chart-action-btn" onclick="exportChartImage('hari-rawatan-chart', 'Hari_Rawatan')"> 📊 PNG </button> <button class="chart-action-btn" onclick="exportChartSVG('hari-rawatan-chart', 'Hari_Rawatan')"> 🖼️ SVG </button> <button class="chart-action-btn" onclick="exportChartData('rawatan')"> 📥 CSV </button>
+       </div>
        <div style="height: 320px;">
         <canvas id="hari-rawatan-chart"></canvas>
        </div>
@@ -338,7 +428,9 @@
     </section><!-- Tabel Data Lengkap -->
     <section class="px-8 py-6">
      <div class="bg-white rounded-xl shadow-md p-6 overflow-x-auto">
-      <h2 class="text-2xl font-bold text-gray-800 mb-6">📋 Tabel Data Lengkap</h2>
+      <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
+       <h2 class="text-2xl font-bold text-gray-800">📋 Tabel Data Lengkap</h2><button class="chart-action-btn" onclick="exportTableToCSV()"> 📥 Export Tabel ke CSV </button>
+      </div>
       <table id="data-table" class="w-full border-collapse">
        <thead>
         <tr class="bg-blue-600 text-white">
@@ -369,12 +461,16 @@
      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><!-- NDR & GDR -->
       <div class="chart-container bg-white rounded-xl shadow-md p-6">
        <h3 class="text-lg font-bold text-gray-800 mb-4">NDR &amp; GDR (‰)</h3>
+       <div class="chart-actions"><button class="chart-action-btn" onclick="exportChartImage('mortality-ndr-gdr-chart', 'NDR_GDR')"> 📊 PNG </button> <button class="chart-action-btn" onclick="exportChartSVG('mortality-ndr-gdr-chart', 'NDR_GDR')"> 🖼️ SVG </button> <button class="chart-action-btn" onclick="exportChartData('mortality')"> 📥 CSV </button>
+       </div>
        <div style="height: 320px;">
         <canvas id="mortality-ndr-gdr-chart"></canvas>
        </div>
       </div><!-- Detail Pasien Meninggal -->
       <div class="chart-container bg-white rounded-xl shadow-md p-6">
        <h3 class="text-lg font-bold text-gray-800 mb-4">Detail Pasien Meninggal</h3>
+       <div class="chart-actions"><button class="chart-action-btn" onclick="exportChartImage('mortality-detail-chart', 'Detail_Meninggal')"> 📊 PNG </button> <button class="chart-action-btn" onclick="exportChartSVG('mortality-detail-chart', 'Detail_Meninggal')"> 🖼️ SVG </button> <button class="chart-action-btn" onclick="exportChartData('mortalitydetail')"> 📥 CSV </button>
+       </div>
        <div style="height: 320px;">
         <canvas id="mortality-detail-chart"></canvas>
        </div>
@@ -402,6 +498,8 @@
   </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     // Google Sheets Configuration - Published CSV URL
     const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT28IN0XIYUAf7Q5W7z8ew86twsfpgSEeXocKTVkjnx8zrZvj29LQAyacLy6MrXqRmxaEjdlbLud8bP/pub?gid=0&single=true&output=csv';
@@ -415,6 +513,240 @@
     let selectedYears = [];
     let selectedPelayananYears = [];
     let selectedBorYears = [];
+
+    // Export Functions
+    function exportChartImage(chartId, filename) {
+      const canvas = document.getElementById(chartId);
+      const url = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `${filename}_${new Date().toISOString().split('T')[0]}.png`;
+      link.href = url;
+      link.click();
+    }
+
+    function exportChartSVG(chartId, filename) {
+      const canvas = document.getElementById(chartId);
+      const url = canvas.toDataURL('image/png');
+      
+      const svgString = `
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${canvas.width}" height="${canvas.height}">
+          <image width="${canvas.width}" height="${canvas.height}" xlink:href="${url}"/>
+        </svg>
+      `;
+      
+      const blob = new Blob([svgString], { type: 'image/svg+xml' });
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = `${filename}_${new Date().toISOString().split('T')[0]}.svg`;
+      link.href = blobUrl;
+      link.click();
+      URL.revokeObjectURL(blobUrl);
+    }
+
+    function exportChartData(type) {
+      let data, filename, headers, rows;
+      
+      if (type === 'bor' || type === 'avlos' || type === 'toi' || type === 'bto') {
+        data = getTrendData();
+        filename = `${type.toUpperCase()}_Data`;
+        headers = ['Periode', type.toUpperCase()];
+        rows = data.map(d => [d.periode, d[type]]);
+      } else if (type === 'patient') {
+        const trendPeriod = document.getElementById('pelayanan-trend-period').value;
+        data = getTrendDataPelayanan(currentFilteredData, trendPeriod, selectedPelayananYears);
+        filename = 'Tren_Pasien';
+        headers = ['Periode', 'Pasien Masuk', 'Pasien Keluar'];
+        rows = data.map(d => [d.periode, d.jlhPasienMasuk, d.jlhPasienKeluar]);
+      } else if (type === 'borpatient') {
+        const trendPeriod = document.getElementById('bor-trend-period').value;
+        data = getTrendDataPelayanan(currentFilteredData, trendPeriod, selectedBorYears);
+        filename = 'BOR_vs_Pasien';
+        headers = ['Periode', 'BOR (%)', 'Pasien Dirawat'];
+        rows = data.map(d => [d.periode, d.bor, d.jlhPasienDirawat]);
+      } else if (type === 'rawatan') {
+        const trendPeriod = document.getElementById('bor-trend-period').value;
+        data = getTrendDataPelayanan(currentFilteredData, trendPeriod, selectedBorYears);
+        filename = 'Hari_Rawatan';
+        headers = ['Periode', 'Hari Rawatan'];
+        rows = data.map(d => [d.periode, d.hariRawatan]);
+      } else if (type === 'mortality') {
+        data = currentFilteredData;
+        filename = 'NDR_GDR';
+        headers = ['Periode', 'NDR (‰)', 'GDR (‰)'];
+        rows = data.map(d => [d.periode, d.ndr, d.gdr]);
+      } else if (type === 'mortalitydetail') {
+        data = currentFilteredData;
+        filename = 'Detail_Meninggal';
+        headers = ['Periode', 'Meninggal ≥48 Jam', 'Meninggal <48 Jam'];
+        rows = data.map(d => [d.periode, d.meninggal48, d.meninggalKurang48]);
+      }
+      
+      downloadCSV(headers, rows, filename);
+    }
+
+    function exportTableToCSV() {
+      const data = currentFilteredData;
+      const headers = ['Periode', 'Pasien Masuk', 'Pasien Keluar', 'Pasien Dirawat', 'Hari Rawatan', 'BOR (%)', 'AVLOS (Hari)', 'TOI (Hari)', 'BTO (Kali)', 'NDR (‰)', 'GDR (‰)'];
+      const rows = data.map(d => [
+        d.periode,
+        d.jlhPasienMasuk,
+        d.jlhPasienKeluar,
+        d.jlhPasienDirawat,
+        d.hariRawatan,
+        d.bor,
+        d.avlos,
+        d.toi,
+        d.bto,
+        d.ndr,
+        d.gdr
+      ]);
+      
+      downloadCSV(headers, rows, 'Data_Lengkap_Rawat_Inap');
+    }
+
+    function downloadCSV(headers, rows, filename) {
+      let csvContent = headers.join(',') + '\n';
+      rows.forEach(row => {
+        csvContent += row.join(',') + '\n';
+      });
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function exportDashboardToPDF() {
+      const exportBtn = document.getElementById('export-pdf-btn');
+      const originalText = exportBtn.innerHTML;
+      exportBtn.innerHTML = '⏳ Sedang membuat PDF...';
+      exportBtn.disabled = true;
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 10;
+        let yPosition = margin;
+
+        // Header
+        pdf.setFillColor(30, 64, 175);
+        pdf.rect(0, 0, pageWidth, 35, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(18);
+        pdf.setFont(undefined, 'bold');
+        pdf.text('Dashboard Indikator Kinerja Rawat Inap', pageWidth / 2, 15, { align: 'center' });
+        pdf.setFontSize(12);
+        pdf.setFont(undefined, 'normal');
+        pdf.text('RSUD Drs. H. AMRI TAMBUNAN', pageWidth / 2, 23, { align: 'center' });
+        pdf.text(`Periode: ${document.getElementById('current-period').textContent}`, pageWidth / 2, 30, { align: 'center' });
+
+        yPosition = 45;
+
+        // Metric Cards
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(14);
+        pdf.setFont(undefined, 'bold');
+        pdf.text('Ringkasan Indikator', margin, yPosition);
+        yPosition += 8;
+
+        pdf.setFontSize(10);
+        pdf.setFont(undefined, 'normal');
+        const metrics = [
+          `BOR: ${document.getElementById('bor-value').textContent}`,
+          `AVLOS: ${document.getElementById('avlos-value').textContent}`,
+          `TOI: ${document.getElementById('toi-value').textContent}`,
+          `BTO: ${document.getElementById('bto-value').textContent}`,
+          `NDR: ${document.getElementById('ndr-value').textContent}`,
+          `GDR: ${document.getElementById('gdr-value').textContent}`
+        ];
+
+        metrics.forEach((metric, idx) => {
+          if (idx % 2 === 0) {
+            pdf.text(metric, margin, yPosition);
+          } else {
+            pdf.text(metric, pageWidth / 2, yPosition);
+            yPosition += 6;
+          }
+        });
+
+        yPosition += 5;
+
+        // Chart: BOR
+        const borCanvas = document.getElementById('bor-chart');
+        const borImg = borCanvas.toDataURL('image/png');
+        pdf.setFontSize(12);
+        pdf.setFont(undefined, 'bold');
+        pdf.text('Grafik BOR (%)', margin, yPosition);
+        yPosition += 5;
+        const chartWidth = pageWidth - 2 * margin;
+        const chartHeight = 60;
+        pdf.addImage(borImg, 'PNG', margin, yPosition, chartWidth, chartHeight);
+        yPosition += chartHeight + 10;
+
+        // Tambah halaman jika diperlukan
+        if (yPosition > pageHeight - 70) {
+          pdf.addPage();
+          yPosition = margin;
+        }
+
+        // Chart: AVLOS
+        const avlosCanvas = document.getElementById('avlos-chart');
+        const avlosImg = avlosCanvas.toDataURL('image/png');
+        pdf.setFontSize(12);
+        pdf.setFont(undefined, 'bold');
+        pdf.text('Grafik AVLOS (Hari)', margin, yPosition);
+        yPosition += 5;
+        pdf.addImage(avlosImg, 'PNG', margin, yPosition, chartWidth, chartHeight);
+        yPosition += chartHeight + 10;
+
+        if (yPosition > pageHeight - 70) {
+          pdf.addPage();
+          yPosition = margin;
+        }
+
+        // Chart: TOI
+        const toiCanvas = document.getElementById('toi-chart');
+        const toiImg = toiCanvas.toDataURL('image/png');
+        pdf.setFontSize(12);
+        pdf.setFont(undefined, 'bold');
+        pdf.text('Grafik TOI (Hari)', margin, yPosition);
+        yPosition += 5;
+        pdf.addImage(toiImg, 'PNG', margin, yPosition, chartWidth, chartHeight);
+        yPosition += chartHeight + 10;
+
+        if (yPosition > pageHeight - 70) {
+          pdf.addPage();
+          yPosition = margin;
+        }
+
+        // Chart: BTO
+        const btoCanvas = document.getElementById('bto-chart');
+        const btoImg = btoCanvas.toDataURL('image/png');
+        pdf.setFontSize(12);
+        pdf.setFont(undefined, 'bold');
+        pdf.text('Grafik BTO (Kali)', margin, yPosition);
+        yPosition += 5;
+        pdf.addImage(btoImg, 'PNG', margin, yPosition, chartWidth, chartHeight);
+
+        // Footer
+        pdf.setFontSize(8);
+        pdf.setTextColor(100);
+        pdf.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, margin, pageHeight - 5);
+
+        pdf.save(`Dashboard_Rawat_Inap_${new Date().toISOString().split('T')[0]}.pdf`);
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Terjadi kesalahan saat membuat PDF. Silakan coba lagi.');
+      } finally {
+        exportBtn.innerHTML = originalText;
+        exportBtn.disabled = false;
+      }
+    }
 
     const defaultConfig = {
       dashboard_title: "Dashboard Indikator Kinerja Rawat Inap",
@@ -643,6 +975,8 @@
       document.getElementById('bor-show-values').addEventListener('change', updatePelayananCharts);
 
       document.getElementById('mutu-show-values').addEventListener('change', updateMutuCharts);
+
+      document.getElementById('export-pdf-btn').addEventListener('click', exportDashboardToPDF);
 
       document.getElementById('tab-dashboard').addEventListener('click', () => switchTab('dashboard'));
       document.getElementById('tab-pelayanan').addEventListener('click', () => switchTab('pelayanan'));
@@ -2378,5 +2712,5 @@
 
     loadDataFromGoogleSheets();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b9a45e057a0d9e8',t:'MTc2NzY5MjYyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b9c472bf5ed87d1',t:'MTc2NzcxMzY1MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
