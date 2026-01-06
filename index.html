@@ -219,13 +219,13 @@
      </div>
     </section><!-- 4 Grafik Tren Utama -->
     <section class="px-8 py-6">
-     <div class="flex items-center justify-between mb-6">
+     <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
       <h2 class="text-2xl font-bold text-gray-800">📊 Tren Indikator Utama</h2>
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-4 flex-wrap">
        <div class="flex items-center gap-3"><label for="trend-period" class="text-sm font-semibold text-gray-700">Tampilkan Tren:</label> <select id="trend-period" class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="monthly">Bulanan</option> <option value="quarterly">Tri Wulan</option> <option value="yearly">Tahunan</option> </select>
        </div>
        <div class="flex items-center gap-3"><label for="dashboard-chart-type" class="text-sm font-semibold text-gray-700">Tipe Chart:</label> <select id="dashboard-chart-type" class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="line">Garis</option> <option value="bar">Bar</option> </select>
-       </div>
+       </div><label class="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 font-medium hover:bg-gray-50 cursor-pointer transition-colors"> <input type="checkbox" id="dashboard-show-values" class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-300"> <span class="text-sm font-semibold">📊 Tampilkan Nilai</span> </label>
        <div class="relative"><button id="year-filter-btn" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 font-medium hover:bg-gray-50 focus:ring-2 focus:ring-blue-300 flex items-center gap-2"> 📅 Pilih Tahun 
          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
          </svg></button>
@@ -275,13 +275,13 @@
    </div><!-- TAB 2: Analisis Pelayanan Rawat Inap -->
    <div id="content-pelayanan" class="tab-content"><!-- Tren Pasien -->
     <section class="px-8 py-6">
-     <div class="flex items-center justify-between mb-6">
+     <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
       <h2 class="text-2xl font-bold text-gray-800">👥 Tren Pasien Rawat Inap</h2>
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-4 flex-wrap">
        <div class="flex items-center gap-3"><label for="pelayanan-trend-period" class="text-sm font-semibold text-gray-700">Tampilkan Tren:</label> <select id="pelayanan-trend-period" class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="monthly">Bulanan</option> <option value="quarterly">Tri Wulan</option> <option value="yearly">Tahunan</option> </select>
        </div>
        <div class="flex items-center gap-3"><label for="pelayanan-chart-type" class="text-sm font-semibold text-gray-700">Tipe Chart:</label> <select id="pelayanan-chart-type" class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="line">Garis</option> <option value="bar">Bar</option> </select>
-       </div>
+       </div><label class="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 font-medium hover:bg-gray-50 cursor-pointer transition-colors"> <input type="checkbox" id="pelayanan-show-values" class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-300"> <span class="text-sm font-semibold">📊 Tampilkan Nilai</span> </label>
        <div class="relative"><button id="pelayanan-year-filter-btn" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 font-medium hover:bg-gray-50 focus:ring-2 focus:ring-blue-300 flex items-center gap-2"> 📅 Pilih Tahun 
          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
          </svg></button>
@@ -302,13 +302,13 @@
      </div>
     </section><!-- BOR vs Kapasitas -->
     <section class="px-8 py-6">
-     <div class="flex items-center justify-between mb-6">
+     <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
       <h2 class="text-2xl font-bold text-gray-800">📈 BOR &amp; Kapasitas Tempat Tidur</h2>
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-4 flex-wrap">
        <div class="flex items-center gap-3"><label for="bor-trend-period" class="text-sm font-semibold text-gray-700">Tampilkan Tren:</label> <select id="bor-trend-period" class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="monthly">Bulanan</option> <option value="quarterly">Tri Wulan</option> <option value="yearly">Tahunan</option> </select>
        </div>
        <div class="flex items-center gap-3"><label for="bor-chart-type" class="text-sm font-semibold text-gray-700">Tipe Chart:</label> <select id="bor-chart-type" class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="line">Garis</option> <option value="bar">Bar</option> </select>
-       </div>
+       </div><label class="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 font-medium hover:bg-gray-50 cursor-pointer transition-colors"> <input type="checkbox" id="bor-show-values" class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-300"> <span class="text-sm font-semibold">📊 Tampilkan Nilai</span> </label>
        <div class="relative"><button id="bor-year-filter-btn" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 font-medium hover:bg-gray-50 focus:ring-2 focus:ring-blue-300 flex items-center gap-2"> 📅 Pilih Tahun 
          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
          </svg></button>
@@ -363,7 +363,9 @@
    </div><!-- TAB 3: Mutu & Keselamatan Pasien -->
    <div id="content-mutu" class="tab-content"><!-- Tren Angka Kematian -->
     <section class="px-8 py-6">
-     <h2 class="text-2xl font-bold text-gray-800 mb-6">⚠️ Tren Angka Kematian</h2>
+     <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
+      <h2 class="text-2xl font-bold text-gray-800">⚠️ Tren Angka Kematian</h2><label class="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 font-medium hover:bg-gray-50 cursor-pointer transition-colors"> <input type="checkbox" id="mutu-show-values" class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-300"> <span class="text-sm font-semibold">📊 Tampilkan Nilai</span> </label>
+     </div>
      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><!-- NDR & GDR -->
       <div class="chart-container bg-white rounded-xl shadow-md p-6">
        <h3 class="text-lg font-bold text-gray-800 mb-4">NDR &amp; GDR (‰)</h3>
@@ -399,6 +401,7 @@
    </footer>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <script>
     // Google Sheets Configuration - Published CSV URL
     const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT28IN0XIYUAf7Q5W7z8ew86twsfpgSEeXocKTVkjnx8zrZvj29LQAyacLy6MrXqRmxaEjdlbLud8bP/pub?gid=0&single=true&output=csv';
@@ -630,11 +633,16 @@
 
       document.getElementById('trend-period').addEventListener('change', updateDashboardCharts);
       document.getElementById('dashboard-chart-type').addEventListener('change', updateDashboardCharts);
+      document.getElementById('dashboard-show-values').addEventListener('change', updateDashboardCharts);
       
       document.getElementById('pelayanan-trend-period').addEventListener('change', updatePelayananCharts);
       document.getElementById('pelayanan-chart-type').addEventListener('change', updatePelayananCharts);
+      document.getElementById('pelayanan-show-values').addEventListener('change', updatePelayananCharts);
       document.getElementById('bor-trend-period').addEventListener('change', updatePelayananCharts);
       document.getElementById('bor-chart-type').addEventListener('change', updatePelayananCharts);
+      document.getElementById('bor-show-values').addEventListener('change', updatePelayananCharts);
+
+      document.getElementById('mutu-show-values').addEventListener('change', updateMutuCharts);
 
       document.getElementById('tab-dashboard').addEventListener('click', () => switchTab('dashboard'));
       document.getElementById('tab-pelayanan').addEventListener('click', () => switchTab('pelayanan'));
@@ -1355,6 +1363,7 @@
       const data = getTrendData();
       const trendPeriod = document.getElementById('trend-period').value;
       const chartType = document.getElementById('dashboard-chart-type').value;
+      const showValues = document.getElementById('dashboard-show-values').checked;
       
       let labels, datasets;
       if (trendPeriod === 'monthly') {
@@ -1453,6 +1462,18 @@
                   return context.dataset.label + ': ' + (context.parsed.y ? context.parsed.y.toFixed(2) + '%' : 'N/A');
                 }
               }
+            },
+            datalabels: {
+              display: showValues,
+              color: '#1f2937',
+              font: {
+                weight: 'bold',
+                size: 10
+              },
+              formatter: (value) => value ? value.toFixed(1) : '',
+              anchor: 'end',
+              align: 'top',
+              offset: -2
             }
           },
           scales: {
@@ -1464,7 +1485,8 @@
               }
             }
           }
-        }
+        },
+        plugins: showValues ? [ChartDataLabels] : []
       });
     }
 
@@ -1473,6 +1495,7 @@
       const data = getTrendData();
       const trendPeriod = document.getElementById('trend-period').value;
       const chartType = document.getElementById('dashboard-chart-type').value;
+      const showValues = document.getElementById('dashboard-show-values').checked;
       
       let labels, datasets;
       if (trendPeriod === 'monthly') {
@@ -1550,6 +1573,18 @@
               callbacks: {
                 label: (context) => context.dataset.label + ': ' + (context.parsed.y ? context.parsed.y.toFixed(2) + ' hari' : 'N/A')
               }
+            },
+            datalabels: {
+              display: showValues,
+              color: '#1f2937',
+              font: {
+                weight: 'bold',
+                size: 10
+              },
+              formatter: (value) => value ? value.toFixed(1) : '',
+              anchor: 'end',
+              align: 'top',
+              offset: -2
             }
           },
           scales: {
@@ -1558,7 +1593,8 @@
               title: { display: true, text: 'Hari' }
             }
           }
-        }
+        },
+        plugins: showValues ? [ChartDataLabels] : []
       });
     }
 
@@ -1567,6 +1603,7 @@
       const data = getTrendData();
       const trendPeriod = document.getElementById('trend-period').value;
       const chartType = document.getElementById('dashboard-chart-type').value;
+      const showValues = document.getElementById('dashboard-show-values').checked;
       
       let labels, datasets;
       if (trendPeriod === 'monthly') {
@@ -1643,6 +1680,18 @@
               callbacks: {
                 label: (context) => context.dataset.label + ': ' + (context.parsed.y ? context.parsed.y.toFixed(2) + ' hari' : 'N/A')
               }
+            },
+            datalabels: {
+              display: showValues,
+              color: '#1f2937',
+              font: {
+                weight: 'bold',
+                size: 10
+              },
+              formatter: (value) => value ? value.toFixed(1) : '',
+              anchor: 'end',
+              align: 'top',
+              offset: -2
             }
           },
           scales: {
@@ -1651,7 +1700,8 @@
               title: { display: true, text: 'Hari' }
             }
           }
-        }
+        },
+        plugins: showValues ? [ChartDataLabels] : []
       });
     }
 
@@ -1660,6 +1710,7 @@
       const data = getTrendData();
       const trendPeriod = document.getElementById('trend-period').value;
       const chartType = document.getElementById('dashboard-chart-type').value;
+      const showValues = document.getElementById('dashboard-show-values').checked;
       
       let labels, datasets;
       if (trendPeriod === 'monthly') {
@@ -1736,6 +1787,18 @@
               callbacks: {
                 label: (context) => context.dataset.label + ': ' + (context.parsed.y ? context.parsed.y.toFixed(2) + ' kali' : 'N/A')
               }
+            },
+            datalabels: {
+              display: showValues,
+              color: '#1f2937',
+              font: {
+                weight: 'bold',
+                size: 10
+              },
+              formatter: (value) => value ? value.toFixed(1) : '',
+              anchor: 'end',
+              align: 'top',
+              offset: -2
             }
           },
           scales: {
@@ -1744,7 +1807,8 @@
               title: { display: true, text: 'Kali' }
             }
           }
-        }
+        },
+        plugins: showValues ? [ChartDataLabels] : []
       });
     }
 
@@ -1752,6 +1816,7 @@
       const ctx = document.getElementById('patient-monthly-chart').getContext('2d');
       const trendPeriod = document.getElementById('pelayanan-trend-period').value;
       const chartType = document.getElementById('pelayanan-chart-type').value;
+      const showValues = document.getElementById('pelayanan-show-values').checked;
       const data = getTrendDataPelayanan(currentFilteredData, trendPeriod, selectedPelayananYears);
 
       const labels = data.map(d => d.periode);
@@ -1785,7 +1850,19 @@
           interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: { position: 'bottom' },
-            tooltip: { mode: 'index', intersect: false }
+            tooltip: { mode: 'index', intersect: false },
+            datalabels: {
+              display: showValues,
+              color: '#1f2937',
+              font: {
+                weight: 'bold',
+                size: 9
+              },
+              formatter: (value) => value ? value.toFixed(0) : '',
+              anchor: 'end',
+              align: 'top',
+              offset: -2
+            }
           },
           scales: {
             y: { 
@@ -1793,7 +1870,8 @@
               title: { display: true, text: 'Jumlah Pasien' }
             }
           }
-        }
+        },
+        plugins: showValues ? [ChartDataLabels] : []
       });
     }
 
@@ -1801,6 +1879,7 @@
       const ctx = document.getElementById('bor-patient-chart').getContext('2d');
       const trendPeriod = document.getElementById('bor-trend-period').value;
       const chartType = document.getElementById('bor-chart-type').value;
+      const showValues = document.getElementById('bor-show-values').checked;
       const data = getTrendDataPelayanan(currentFilteredData, trendPeriod, selectedBorYears);
 
       const labels = data.map(d => d.periode);
@@ -1836,7 +1915,24 @@
           interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: { position: 'bottom' },
-            tooltip: { mode: 'index', intersect: false }
+            tooltip: { mode: 'index', intersect: false },
+            datalabels: {
+              display: showValues,
+              color: '#1f2937',
+              font: {
+                weight: 'bold',
+                size: 9
+              },
+              formatter: (value, context) => {
+                if (context.dataset.label.includes('BOR')) {
+                  return value ? value.toFixed(1) + '%' : '';
+                }
+                return value ? value.toFixed(0) : '';
+              },
+              anchor: 'end',
+              align: 'top',
+              offset: -2
+            }
           },
           scales: {
             y: { 
@@ -1853,7 +1949,8 @@
               grid: { drawOnChartArea: false }
             }
           }
-        }
+        },
+        plugins: showValues ? [ChartDataLabels] : []
       });
     }
 
@@ -1861,6 +1958,7 @@
       const ctx = document.getElementById('hari-rawatan-chart').getContext('2d');
       const trendPeriod = document.getElementById('bor-trend-period').value;
       const chartType = document.getElementById('bor-chart-type').value;
+      const showValues = document.getElementById('bor-show-values').checked;
       const data = getTrendDataPelayanan(currentFilteredData, trendPeriod, selectedBorYears);
 
       const labels = data.map(d => d.periode);
@@ -1884,7 +1982,19 @@
           interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: { position: 'bottom' },
-            tooltip: { mode: 'index', intersect: false }
+            tooltip: { mode: 'index', intersect: false },
+            datalabels: {
+              display: showValues,
+              color: '#1f2937',
+              font: {
+                weight: 'bold',
+                size: 10
+              },
+              formatter: (value) => value ? value.toFixed(0) : '',
+              anchor: 'end',
+              align: 'top',
+              offset: -2
+            }
           },
           scales: {
             y: { 
@@ -1892,13 +2002,15 @@
               title: { display: true, text: 'Jumlah Hari' }
             }
           }
-        }
+        },
+        plugins: showValues ? [ChartDataLabels] : []
       });
     }
 
     function createMortalityNdrGdrChart() {
       const ctx = document.getElementById('mortality-ndr-gdr-chart').getContext('2d');
       const data = currentFilteredData;
+      const showValues = document.getElementById('mutu-show-values').checked;
       const labels = data.map(d => d.periode);
 
       allCharts.mortalityNdrGdr = new Chart(ctx, {
@@ -1930,7 +2042,19 @@
           interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: { position: 'bottom' },
-            tooltip: { mode: 'index', intersect: false }
+            tooltip: { mode: 'index', intersect: false },
+            datalabels: {
+              display: showValues,
+              color: '#1f2937',
+              font: {
+                weight: 'bold',
+                size: 10
+              },
+              formatter: (value) => value ? value.toFixed(1) : '',
+              anchor: 'end',
+              align: 'top',
+              offset: -2
+            }
           },
           scales: {
             y: { 
@@ -1938,13 +2062,15 @@
               title: { display: true, text: 'Per 1000 (‰)' }
             }
           }
-        }
+        },
+        plugins: showValues ? [ChartDataLabels] : []
       });
     }
 
     function createMortalityDetailChart() {
       const ctx = document.getElementById('mortality-detail-chart').getContext('2d');
       const data = currentFilteredData;
+      const showValues = document.getElementById('mutu-show-values').checked;
       const labels = data.map(d => d.periode);
 
       allCharts.mortalityDetail = new Chart(ctx, {
@@ -1953,7 +2079,7 @@
           labels: labels,
           datasets: [
             {
-              label: 'Meninggal �� 48 Jam',
+              label: 'Meninggal ≥ 48 Jam',
               data: data.map(d => d.meninggal48),
               backgroundColor: 'rgba(239, 68, 68, 0.8)',
               borderColor: '#ef4444',
@@ -1974,7 +2100,18 @@
           interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: { position: 'bottom' },
-            tooltip: { mode: 'index', intersect: false }
+            tooltip: { mode: 'index', intersect: false },
+            datalabels: {
+              display: showValues,
+              color: '#ffffff',
+              font: {
+                weight: 'bold',
+                size: 10
+              },
+              formatter: (value) => value || '',
+              anchor: 'center',
+              align: 'center'
+            }
           },
           scales: {
             y: { 
@@ -1988,7 +2125,8 @@
               stacked: true
             }
           }
-        }
+        },
+        plugins: showValues ? [ChartDataLabels] : []
       });
     }
 
@@ -2023,7 +2161,7 @@
             <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.avlos, 2)}</td>
             <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.toi, 2)}</td>
             <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.bto, 2)}</td>
-            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.ndr, 2)}���</td>
+            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.ndr, 2)}‰</td>
             <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.gdr, 2)}‰</td>
           </tr>
         `;
@@ -2240,5 +2378,5 @@
 
     loadDataFromGoogleSheets();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b9a2d7b30c2c6b2',t:'MTc2NzY5MTYyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b9a45e057a0d9e8',t:'MTc2NzY5MjYyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
