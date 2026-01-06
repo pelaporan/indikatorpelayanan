@@ -1,248 +1,2244 @@
 <!doctype html>
 <html lang="id" class="h-full">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Indikator Pelayanan Rawat Inap</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<style>
-body { font-family: Inter, system-ui, sans-serif; }
-.metric-card { transition: .3s; }
-.metric-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,.15); }
-.chart-container { height: 320px; }
-.status-good { border-left: 4px solid #10B981 }
-.status-warning { border-left: 4px solid #F59E0B }
-.status-danger { border-left: 4px solid #EF4444 }
-.badge { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600 }
-.badge-green { background:#D1FAE5;color:#065F46 }
-.badge-yellow { background:#FEF3C7;color:#92400E }
-.badge-red { background:#FEE2E2;color:#991B1B }
-.loading-spinner { border:3px solid #eee;border-top:3px solid #4F46E5;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite }
-@keyframes spin {100%{transform:rotate(360deg)}}
-</style>
-</head>
-
-<body class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-
-<header class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-8">
-  <h1 class="text-4xl font-bold">Dashboard Indikator Pelayanan Rawat Inap</h1>
-  <p class="opacity-90">RSUD Drs. H. AMRI TAMBUNAN</p>
-</header>
-
-<div class="max-w-7xl mx-auto p-6">
-
-<div class="bg-white p-6 rounded-xl shadow mb-6 flex gap-4 items-end">
-  <div>
-    <label class="font-semibold text-sm">Periode</label>
-    <select id="periodeFilter" class="border rounded-lg px-4 py-2">
-      <option value="all">Semua Periode</option>
-    </select>
-  </div>
-  <button onclick="location.reload()" class="ml-auto bg-indigo-600 text-white px-6 py-2 rounded-lg">
-    <i class="fas fa-sync mr-2"></i>Refresh
-  </button>
-</div>
-
-<div id="loading" class="flex items-center gap-3 py-10 justify-center">
-  <div class="loading-spinner"></div>
-  <span>Memuat data...</span>
-</div>
-
-<div id="content" style="display:none">
-
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-  <div class="metric-card bg-white p-6 rounded-xl shadow status-good">
-    <span id="borBadge" class="badge badge-green">Normal</span>
-    <div class="text-3xl font-bold" id="borValue">0%</div>
-    <div class="text-sm text-gray-500">BOR</div>
-  </div>
-
-  <div class="metric-card bg-white p-6 rounded-xl shadow status-good">
-    <span id="avlosBadge" class="badge badge-green">Normal</span>
-    <div class="text-3xl font-bold" id="avlosValue">0</div>
-    <div class="text-sm text-gray-500">AVLOS</div>
-  </div>
-
-  <div class="metric-card bg-white p-6 rounded-xl shadow status-good">
-    <span id="toiBadge" class="badge badge-green">Normal</span>
-    <div class="text-3xl font-bold" id="toiValue">0</div>
-    <div class="text-sm text-gray-500">TOI</div>
-  </div>
-</div>
-
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-  <div class="metric-card bg-white p-6 rounded-xl shadow status-good">
-    <span id="btoBadge" class="badge badge-green">Normal</span>
-    <div class="text-3xl font-bold" id="btoValue">0</div>
-    <div class="text-sm text-gray-500">BTO (≥3,3/bln)</div>
-  </div>
-
-  <div class="metric-card bg-white p-6 rounded-xl shadow status-good">
-    <span id="ndrBadge" class="badge badge-green">Normal</span>
-    <div class="text-3xl font-bold" id="ndrValue">0‰</div>
-    <div class="text-sm text-gray-500">NDR</div>
-  </div>
-
-  <div class="metric-card bg-white p-6 rounded-xl shadow status-good">
-    <span id="gdrBadge" class="badge badge-green">Normal</span>
-    <div class="text-3xl font-bold" id="gdrValue">0‰</div>
-    <div class="text-sm text-gray-500">GDR</div>
-  </div>
-</div>
-
-<div class="bg-white p-6 rounded-xl shadow mb-6">
-  <canvas id="borChart"></canvas>
-</div>
-
-<div class="bg-white p-6 rounded-xl shadow overflow-x-auto">
-<table class="w-full text-sm">
-<thead class="bg-indigo-600 text-white">
-<tr>
-<th class="p-2">Periode</th>
-<th class="p-2">BOR</th>
-<th class="p-2">AVLOS</th>
-<th class="p-2">TOI</th>
-<th class="p-2">BTO</th>
-<th class="p-2">NDR</th>
-<th class="p-2">GDR</th>
-</tr>
-</thead>
-<tbody id="dataTable"></tbody>
-</table>
-</div>
-
-</div>
-</div>
-
-<script>
-const SHEET_ID = "2PACX-1vT28IN0XIYUAf7Q5W7z8ew86twsfpgSEeXocKTVkjnx8zrZvj29LQAyacLy6MrXqRmxaEjdlbLud8bP";
-const CSV_URL = `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?output=csv`;
-
-let rawData=[], chart;
-
-function num(v){
-  if(!v) return 0;
-  return parseFloat(v.toString().replace(/\./g,'').replace(',','.'))||0;
-}
-
-function status(metric,min,max,reverse=false){
-  if(reverse){
-    if(metric<=max) return ['good','badge-green','Normal'];
-    if(metric>max*1.5) return ['danger','badge-red','Bahaya'];
-    return ['warning','badge-yellow','Waspada'];
-  }
-  if(metric>=min && metric<=max) return ['good','badge-green','Normal'];
-  if(metric<min||metric>max) return ['warning','badge-yellow','Waspada'];
-  return ['danger','badge-red','Bahaya'];
-}
-
-fetch(CSV_URL)
-.then(r=>r.text())
-.then(csv=>{
-  Papa.parse(csv,{
-    header:true,
-    skipEmptyLines:true,
-    complete:res=>{
-      rawData=res.data.map(r=>({
-        periode:r.Periode,
-        bor:num(r.BOR),
-        avlos:num(r.AVLOS),
-        toi:num(r.TOI),
-        bto:num(r.BTO),
-        ndr:num(r.NDR),
-        gdr:num(r.GDR)
-      }));
-      init();
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Indikator Kinerja Rawat Inap</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
     }
-  })
-});
-
-function init(){
-  document.getElementById('loading').style.display='none';
-  document.getElementById('content').style.display='block';
-
-  const select=document.getElementById('periodeFilter');
-  [...new Set(rawData.map(d=>d.periode))].forEach(p=>{
-    select.innerHTML+=`<option>${p}</option>`;
-  });
-  select.onchange=render;
-  render();
-}
-
-function render(){
-  const p=document.getElementById('periodeFilter').value;
-  const data=p==='all'?rawData:rawData.filter(d=>d.periode===p);
-  const avg=k=>data.reduce((a,b)=>a+b[k],0)/data.length;
-
-  const metrics={
-    bor:avg('bor'),
-    avlos:avg('avlos'),
-    toi:avg('toi'),
-    bto:avg('bto'),
-    ndr:avg('ndr'),
-    gdr:avg('gdr')
-  };
-
-  document.getElementById('borValue').innerText=metrics.bor.toFixed(2)+'%';
-  document.getElementById('avlosValue').innerText=metrics.avlos.toFixed(2);
-  document.getElementById('toiValue').innerText=metrics.toi.toFixed(2);
-  document.getElementById('btoValue').innerText=metrics.bto.toFixed(2);
-  document.getElementById('ndrValue').innerText=metrics.ndr.toFixed(2)+'‰';
-  document.getElementById('gdrValue').innerText=metrics.gdr.toFixed(2)+'‰';
-
-  updateCard('bor',status(metrics.bor,60,85));
-  updateCard('avlos',status(metrics.avlos,3,9));
-  updateCard('toi',status(metrics.toi,1,3));
-  updateCard('bto',metrics.bto>=3.3?['good','badge-green','Normal']:['warning','badge-yellow','Rendah']);
-  updateCard('ndr',status(metrics.ndr,0,25,true));
-  updateCard('gdr',status(metrics.gdr,0,45,true));
-
-  drawChart(data);
-  fillTable(data);
-}
-
-function updateCard(id,[s,b,t]){
-  const badge=document.getElementById(id+'Badge');
-  const card=badge.closest('.metric-card');
-  badge.className=`badge ${b}`;
-  badge.innerText=t;
-  card.classList.remove('status-good','status-warning','status-danger');
-  card.classList.add(`status-${s}`);
-}
-
-function drawChart(data){
-  if(chart) chart.destroy();
-  chart=new Chart(borChart,{
-    type:'line',
-    data:{
-      labels:data.map(d=>d.periode),
-      datasets:[{label:'BOR',data:data.map(d=>d.bor),borderColor:'#3B82F6',fill:true}]
+    
+    .metric-card {
+      transition: all 0.3s ease;
+      animation: slideUp 0.6s ease-out;
     }
-  });
-}
+    
+    .metric-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    }
+    
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .chart-container {
+      animation: fadeIn 0.8s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .status-good { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .status-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .status-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+    
+    .insight-box {
+      border-left: 4px solid #3b82f6;
+      background: linear-gradient(90deg, #eff6ff 0%, #ffffff 100%);
+    }
 
-function fillTable(data){
-  const tb=document.getElementById('dataTable');
-  tb.innerHTML='';
-  data.forEach(d=>{
-    tb.innerHTML+=`
-    <tr>
-      <td class="p-2">${d.periode}</td>
-      <td class="p-2 text-right">${d.bor.toFixed(2)}</td>
-      <td class="p-2 text-right">${d.avlos.toFixed(2)}</td>
-      <td class="p-2 text-right">${d.toi.toFixed(2)}</td>
-      <td class="p-2 text-right">${d.bto.toFixed(2)}</td>
-      <td class="p-2 text-right">${d.ndr.toFixed(2)}</td>
-      <td class="p-2 text-right">${d.gdr.toFixed(2)}</td>
-    </tr>`;
-  });
-}
-</script>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
 
-</body>
+    .tab-button {
+      transition: all 0.2s ease;
+    }
+
+    .tab-button.active {
+      color: #3b82f6;
+      border-bottom: 3px solid #3b82f6;
+      background-color: #eff6ff;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .quick-filter-btn.active {
+      background: white !important;
+      color: #2563eb !important;
+      font-weight: 700;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full w-full overflow-auto" style="background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 50%, #ffffff 100%);">
+  <div class="min-h-full w-full"><!-- Loading Indicator -->
+   <div id="loading-indicator" class="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-white bg-opacity-95 z-50">
+    <div class="text-center">
+     <div class="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mb-4"></div>
+     <p class="text-xl font-semibold text-gray-800">📊 Memuat data dari Google Sheets...</p>
+     <p class="text-sm text-gray-600 mt-2">Mohon tunggu sebentar</p>
+    </div>
+   </div><!-- Error Indicator -->
+   <div id="error-indicator" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-lg z-50 max-w-2xl" style="display: none;">
+    <div class="flex items-start gap-3"><span class="text-2xl">⚠️</span>
+     <div>
+      <p class="font-semibold">Gagal memuat data dari Google Sheets</p>
+      <p class="text-sm mt-1">Pastikan Google Sheet sudah di-publish sebagai CSV</p>
+     </div>
+    </div>
+   </div><!-- Header -->
+   <header class="px-8 py-6" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div class="flex items-center justify-between mb-6">
+     <div>
+      <h1 id="dashboard-title" class="text-3xl font-bold text-white mb-1">Dashboard Indikator Kinerja Rawat Inap</h1>
+      <p id="hospital-name" class="text-lg text-blue-100">RSUD Drs. H. AMRI TAMBUNAN</p>
+     </div>
+     <div class="text-right">
+      <p id="period-label" class="text-sm text-blue-100 mb-1">Periode Laporan:</p>
+      <p id="current-period" class="text-xl font-semibold text-white">Memuat data...</p>
+     </div>
+    </div><!-- Filter Dashboard Utama -->
+    <div id="dashboard-filters" class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur-sm">
+     <div class="flex flex-wrap gap-3 mb-3"><button id="filter-bulan-ini" class="quick-filter-btn active px-6 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-200 shadow-md"> 📅 Bulan Ini </button> <button id="filter-bulan-lalu" class="quick-filter-btn px-6 py-2 bg-white bg-opacity-50 text-white rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200"> 📆 Bulan Lalu </button> <button id="filter-tahun-ini" class="quick-filter-btn px-6 py-2 bg-white bg-opacity-50 text-white rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200"> 📊 Tahun Ini </button> <button id="filter-tahun-lalu" class="quick-filter-btn px-6 py-2 bg-white bg-opacity-50 text-white rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200"> 📅 Tahun Lalu </button> <button id="filter-custom" class="quick-filter-btn px-6 py-2 bg-white bg-opacity-50 text-white rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-all duration-200"> 🔍 Pilih Periode </button>
+     </div><!-- Custom Period Selector -->
+     <div id="custom-period-selector" class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4" style="display: none;">
+      <div><label for="custom-year" class="block text-sm font-medium text-white mb-2">📅 Tahun</label> <select id="custom-year" class="w-full px-4 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="all">Semua Tahun</option> </select>
+      </div>
+      <div><label for="custom-month" class="block text-sm font-medium text-white mb-2">📆 Bulan</label> <select id="custom-month" class="w-full px-4 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="all">Semua Bulan</option> <option value="Jan">Januari</option> <option value="Feb">Februari</option> <option value="Mar">Maret</option> <option value="Apr">April</option> <option value="Mei">Mei</option> <option value="Jun">Juni</option> <option value="Jul">Juli</option> <option value="Agu">Agustus</option> <option value="Sep">September</option> <option value="Okt">Oktober</option> <option value="Nov">November</option> <option value="Des">Desember</option> </select>
+      </div>
+      <div class="flex items-end"><button id="apply-custom-filter" class="w-full px-6 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-200 shadow-md"> ✓ Terapkan </button>
+      </div>
+     </div>
+    </div><!-- Filter Tab Lain -->
+    <div id="other-tabs-filters" class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur-sm" style="display: none;">
+     <div><label for="year-filter" class="block text-sm font-medium text-white mb-2">📅 Tahun</label> <select id="year-filter" class="w-full px-4 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="all">Semua Tahun</option> </select>
+     </div>
+     <div><label for="month-filter" class="block text-sm font-medium text-white mb-2">📆 Bulan</label> <select id="month-filter" class="w-full px-4 py-2 rounded-lg border-0 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="all" selected>Semua Bulan</option> <option value="Jan">Januari</option> <option value="Feb">Februari</option> <option value="Mar">Maret</option> <option value="Apr">April</option> <option value="Mei">Mei</option> <option value="Jun">Juni</option> <option value="Jul">Juli</option> <option value="Agu">Agustus</option> <option value="Sep">September</option> <option value="Okt">Oktober</option> <option value="Nov">November</option> <option value="Des">Desember</option> </select>
+     </div>
+     <div class="flex items-end"><button id="reset-filter" class="w-full px-6 py-2 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all duration-200 shadow-md"> 🔄 Reset Filter </button>
+     </div>
+    </div>
+   </header><!-- Tab Navigation -->
+   <section class="px-8 py-6">
+    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+     <div class="flex border-b border-gray-200"><button id="tab-dashboard" class="tab-button px-6 py-4 font-semibold focus:outline-none active"> 🏠 Dashboard Utama </button> <button id="tab-pelayanan" class="tab-button px-6 py-4 font-semibold text-gray-600 hover:text-blue-600 focus:outline-none"> 📊 Analisis Pelayanan </button> <button id="tab-mutu" class="tab-button px-6 py-4 font-semibold text-gray-600 hover:text-blue-600 focus:outline-none"> ⚕️ Mutu &amp; Keselamatan </button>
+     </div>
+    </div>
+   </section><!-- TAB 1: Dashboard Utama -->
+   <div id="content-dashboard" class="tab-content active"><!-- Metric Cards -->
+    <section class="px-8 py-6">
+     <div class="mb-4 bg-blue-50 border-l-4 border-blue-600 p-4 rounded-lg shadow-sm">
+      <p class="text-sm font-semibold text-blue-900">📌 Data Card: <span id="card-period-info" class="font-bold text-blue-700">Memuat...</span></p>
+      <p class="text-xs text-blue-700 mt-1">Card menampilkan data sesuai filter yang dipilih</p>
+     </div>
+     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4"><!-- BOR Card -->
+      <div class="metric-card bg-white rounded-xl shadow-md p-5" style="animation-delay: 0.1s;">
+       <div class="flex items-center justify-between mb-3">
+        <div class="w-12 h-12 rounded-lg flex items-center justify-center text-2xl" id="bor-icon-bg">
+         🏥
+        </div>
+        <div id="bor-status" class="w-3 h-3 rounded-full"></div>
+       </div>
+       <h3 class="text-sm font-semibold text-gray-600 mb-1">BOR</h3>
+       <p id="bor-value" class="text-3xl font-bold text-gray-900 mb-1">--</p>
+       <p class="text-xs text-gray-500">Target: 60-85%</p>
+      </div><!-- AVLOS Card -->
+      <div class="metric-card bg-white rounded-xl shadow-md p-5" style="animation-delay: 0.15s;">
+       <div class="flex items-center justify-between mb-3">
+        <div class="w-12 h-12 rounded-lg flex items-center justify-center text-2xl" id="avlos-icon-bg">
+         ⏱️
+        </div>
+        <div id="avlos-status" class="w-3 h-3 rounded-full"></div>
+       </div>
+       <h3 class="text-sm font-semibold text-gray-600 mb-1">AVLOS</h3>
+       <p id="avlos-value" class="text-3xl font-bold text-gray-900 mb-1">--</p>
+       <p class="text-xs text-gray-500">Target: 6-9 hari</p>
+      </div><!-- TOI Card -->
+      <div class="metric-card bg-white rounded-xl shadow-md p-5" style="animation-delay: 0.2s;">
+       <div class="flex items-center justify-between mb-3">
+        <div class="w-12 h-12 rounded-lg flex items-center justify-center text-2xl" id="toi-icon-bg">
+         🔄
+        </div>
+        <div id="toi-status" class="w-3 h-3 rounded-full"></div>
+       </div>
+       <h3 class="text-sm font-semibold text-gray-600 mb-1">TOI</h3>
+       <p id="toi-value" class="text-3xl font-bold text-gray-900 mb-1">--</p>
+       <p class="text-xs text-gray-500">Target: 1-3 hari</p>
+      </div><!-- BTO Card -->
+      <div class="metric-card bg-white rounded-xl shadow-md p-5" style="animation-delay: 0.25s;">
+       <div class="flex items-center justify-between mb-3">
+        <div class="w-12 h-12 rounded-lg flex items-center justify-center text-2xl" id="bto-icon-bg">
+         🔁
+        </div>
+        <div id="bto-status" class="w-3 h-3 rounded-full"></div>
+       </div>
+       <h3 class="text-sm font-semibold text-gray-600 mb-1">BTO</h3>
+       <p id="bto-value" class="text-3xl font-bold text-gray-900 mb-1">--</p>
+       <p class="text-xs text-gray-500">Target: 40-50 kali</p>
+      </div><!-- NDR Card -->
+      <div class="metric-card bg-white rounded-xl shadow-md p-5" style="animation-delay: 0.3s;">
+       <div class="flex items-center justify-between mb-3">
+        <div class="w-12 h-12 rounded-lg flex items-center justify-center text-2xl" id="ndr-icon-bg">
+         💊
+        </div>
+        <div id="ndr-status" class="w-3 h-3 rounded-full"></div>
+       </div>
+       <h3 class="text-sm font-semibold text-gray-600 mb-1">NDR</h3>
+       <p id="ndr-value" class="text-3xl font-bold text-gray-900 mb-1">--</p>
+       <p class="text-xs text-gray-500">Net Death Rate</p>
+      </div><!-- GDR Card -->
+      <div class="metric-card bg-white rounded-xl shadow-md p-5" style="animation-delay: 0.35s;">
+       <div class="flex items-center justify-between mb-3">
+        <div class="w-12 h-12 rounded-lg flex items-center justify-center text-2xl" id="gdr-icon-bg">
+         📈
+        </div>
+        <div id="gdr-status" class="w-3 h-3 rounded-full"></div>
+       </div>
+       <h3 class="text-sm font-semibold text-gray-600 mb-1">GDR</h3>
+       <p id="gdr-value" class="text-3xl font-bold text-gray-900 mb-1">--</p>
+       <p class="text-xs text-gray-500">Gross Death Rate</p>
+      </div>
+     </div>
+    </section><!-- 4 Grafik Tren Utama -->
+    <section class="px-8 py-6">
+     <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">📊 Tren Indikator Utama</h2>
+      <div class="flex items-center gap-4">
+       <div class="flex items-center gap-3"><label for="trend-period" class="text-sm font-semibold text-gray-700">Tampilkan Tren:</label> <select id="trend-period" class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="monthly">Bulanan</option> <option value="quarterly">Tri Wulan</option> <option value="yearly">Tahunan</option> </select>
+       </div>
+       <div class="flex items-center gap-3"><label for="dashboard-chart-type" class="text-sm font-semibold text-gray-700">Tipe Chart:</label> <select id="dashboard-chart-type" class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="line">Garis</option> <option value="bar">Bar</option> </select>
+       </div>
+       <div class="relative"><button id="year-filter-btn" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 font-medium hover:bg-gray-50 focus:ring-2 focus:ring-blue-300 flex items-center gap-2"> 📅 Pilih Tahun 
+         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+         </svg></button>
+        <div id="year-filter-dropdown" class="absolute right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 z-50 hidden" style="min-width: 200px;">
+         <div class="p-3 border-b border-gray-200"><label class="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 p-2 rounded"> <input type="checkbox" id="select-all-years" checked class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-300"> <span>Semua Tahun</span> </label>
+         </div>
+         <div id="year-checkboxes" class="p-2 max-h-64 overflow-y-auto"><!-- Will be populated by JS -->
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><!-- Grafik BOR -->
+      <div class="chart-container bg-white rounded-xl shadow-md p-6">
+       <h3 class="text-lg font-bold text-gray-800 mb-4">BOR (%)</h3>
+       <div style="height: 320px;">
+        <canvas id="bor-chart"></canvas>
+       </div>
+      </div><!-- Grafik AVLOS -->
+      <div class="chart-container bg-white rounded-xl shadow-md p-6">
+       <h3 class="text-lg font-bold text-gray-800 mb-4">AVLOS (Hari)</h3>
+       <div style="height: 320px;">
+        <canvas id="avlos-chart"></canvas>
+       </div>
+      </div><!-- Grafik TOI -->
+      <div class="chart-container bg-white rounded-xl shadow-md p-6">
+       <h3 class="text-lg font-bold text-gray-800 mb-4">TOI (Hari)</h3>
+       <div style="height: 320px;">
+        <canvas id="toi-chart"></canvas>
+       </div>
+      </div><!-- Grafik BTO -->
+      <div class="chart-container bg-white rounded-xl shadow-md p-6">
+       <h3 class="text-lg font-bold text-gray-800 mb-4">BTO (Kali)</h3>
+       <div style="height: 320px;">
+        <canvas id="bto-chart"></canvas>
+       </div>
+      </div>
+     </div>
+    </section><!-- Executive Insight -->
+    <section class="px-8 py-6">
+     <div class="bg-white rounded-xl shadow-md p-6">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">💡 Insight Eksekutif</h2>
+      <div id="executive-insights" class="space-y-3"><!-- Will be populated by JS -->
+      </div>
+     </div>
+    </section>
+   </div><!-- TAB 2: Analisis Pelayanan Rawat Inap -->
+   <div id="content-pelayanan" class="tab-content"><!-- Tren Pasien -->
+    <section class="px-8 py-6">
+     <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">👥 Tren Pasien Rawat Inap</h2>
+      <div class="flex items-center gap-4">
+       <div class="flex items-center gap-3"><label for="pelayanan-trend-period" class="text-sm font-semibold text-gray-700">Tampilkan Tren:</label> <select id="pelayanan-trend-period" class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="monthly">Bulanan</option> <option value="quarterly">Tri Wulan</option> <option value="yearly">Tahunan</option> </select>
+       </div>
+       <div class="flex items-center gap-3"><label for="pelayanan-chart-type" class="text-sm font-semibold text-gray-700">Tipe Chart:</label> <select id="pelayanan-chart-type" class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="line">Garis</option> <option value="bar">Bar</option> </select>
+       </div>
+       <div class="relative"><button id="pelayanan-year-filter-btn" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 font-medium hover:bg-gray-50 focus:ring-2 focus:ring-blue-300 flex items-center gap-2"> 📅 Pilih Tahun 
+         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+         </svg></button>
+        <div id="pelayanan-year-filter-dropdown" class="absolute right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 z-50 hidden" style="min-width: 200px;">
+         <div class="p-3 border-b border-gray-200"><label class="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 p-2 rounded"> <input type="checkbox" id="pelayanan-select-all-years" checked class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-300"> <span>Semua Tahun</span> </label>
+         </div>
+         <div id="pelayanan-year-checkboxes" class="p-2 max-h-64 overflow-y-auto"><!-- Will be populated by JS -->
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+     <div class="chart-container bg-white rounded-xl shadow-md p-6">
+      <h3 class="text-lg font-bold text-gray-800 mb-4">Tren Pasien</h3>
+      <div style="height: 400px;">
+       <canvas id="patient-monthly-chart"></canvas>
+      </div>
+     </div>
+    </section><!-- BOR vs Kapasitas -->
+    <section class="px-8 py-6">
+     <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">📈 BOR &amp; Kapasitas Tempat Tidur</h2>
+      <div class="flex items-center gap-4">
+       <div class="flex items-center gap-3"><label for="bor-trend-period" class="text-sm font-semibold text-gray-700">Tampilkan Tren:</label> <select id="bor-trend-period" class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="monthly">Bulanan</option> <option value="quarterly">Tri Wulan</option> <option value="yearly">Tahunan</option> </select>
+       </div>
+       <div class="flex items-center gap-3"><label for="bor-chart-type" class="text-sm font-semibold text-gray-700">Tipe Chart:</label> <select id="bor-chart-type" class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="line">Garis</option> <option value="bar">Bar</option> </select>
+       </div>
+       <div class="relative"><button id="bor-year-filter-btn" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 font-medium hover:bg-gray-50 focus:ring-2 focus:ring-blue-300 flex items-center gap-2"> 📅 Pilih Tahun 
+         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+         </svg></button>
+        <div id="bor-year-filter-dropdown" class="absolute right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 z-50 hidden" style="min-width: 200px;">
+         <div class="p-3 border-b border-gray-200"><label class="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 p-2 rounded"> <input type="checkbox" id="bor-select-all-years" checked class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-300"> <span>Semua Tahun</span> </label>
+         </div>
+         <div id="bor-year-checkboxes" class="p-2 max-h-64 overflow-y-auto"><!-- Will be populated by JS -->
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><!-- BOR vs Jumlah Pasien -->
+      <div class="chart-container bg-white rounded-xl shadow-md p-6">
+       <h3 class="text-lg font-bold text-gray-800 mb-4">BOR vs Jumlah Pasien Dirawat</h3>
+       <div style="height: 320px;">
+        <canvas id="bor-patient-chart"></canvas>
+       </div>
+      </div><!-- Hari Rawatan -->
+      <div class="chart-container bg-white rounded-xl shadow-md p-6">
+       <h3 class="text-lg font-bold text-gray-800 mb-4">Tren Hari Rawatan</h3>
+       <div style="height: 320px;">
+        <canvas id="hari-rawatan-chart"></canvas>
+       </div>
+      </div>
+     </div>
+    </section><!-- Tabel Data Lengkap -->
+    <section class="px-8 py-6">
+     <div class="bg-white rounded-xl shadow-md p-6 overflow-x-auto">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6">📋 Tabel Data Lengkap</h2>
+      <table id="data-table" class="w-full border-collapse">
+       <thead>
+        <tr class="bg-blue-600 text-white">
+         <th class="border border-gray-300 px-4 py-3 text-left font-semibold">Periode</th>
+         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">Pasien Masuk</th>
+         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">Pasien Keluar</th>
+         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">Pasien Dirawat</th>
+         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">Hari Rawatan</th>
+         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">BOR (%)</th>
+         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">AVLOS (Hari)</th>
+         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">TOI (Hari)</th>
+         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">BTO (Kali)</th>
+         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">NDR (‰)</th>
+         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">GDR (‰)</th>
+        </tr>
+       </thead>
+       <tbody id="table-body"><!-- Will be populated by JS -->
+       </tbody>
+      </table>
+     </div>
+    </section>
+   </div><!-- TAB 3: Mutu & Keselamatan Pasien -->
+   <div id="content-mutu" class="tab-content"><!-- Tren Angka Kematian -->
+    <section class="px-8 py-6">
+     <h2 class="text-2xl font-bold text-gray-800 mb-6">⚠️ Tren Angka Kematian</h2>
+     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><!-- NDR & GDR -->
+      <div class="chart-container bg-white rounded-xl shadow-md p-6">
+       <h3 class="text-lg font-bold text-gray-800 mb-4">NDR &amp; GDR (‰)</h3>
+       <div style="height: 320px;">
+        <canvas id="mortality-ndr-gdr-chart"></canvas>
+       </div>
+      </div><!-- Detail Pasien Meninggal -->
+      <div class="chart-container bg-white rounded-xl shadow-md p-6">
+       <h3 class="text-lg font-bold text-gray-800 mb-4">Detail Pasien Meninggal</h3>
+       <div style="height: 320px;">
+        <canvas id="mortality-detail-chart"></canvas>
+       </div>
+      </div>
+     </div>
+    </section><!-- Interpretasi Mutu -->
+    <section class="px-8 py-6">
+     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><!-- Interpretasi & Risiko -->
+      <div class="bg-white rounded-xl shadow-md p-6">
+       <h2 class="text-xl font-bold text-gray-800 mb-4">📋 Interpretasi &amp; Catatan Risiko</h2>
+       <div id="quality-interpretation" class="space-y-3"><!-- Will be populated by JS -->
+       </div>
+      </div><!-- Rekomendasi Mutu -->
+      <div class="bg-white rounded-xl shadow-md p-6">
+       <h2 class="text-xl font-bold text-gray-800 mb-4">🎯 Rekomendasi Peningkatan Mutu</h2>
+       <div id="quality-recommendations" class="space-y-3"><!-- Will be populated by JS -->
+       </div>
+      </div>
+     </div>
+    </section>
+   </div><!-- Footer -->
+   <footer class="px-8 py-4 text-center text-sm text-gray-600">
+    <p>© 2025 RSUD Drs. H. AMRI TAMBUNAN - Dashboard Indikator Kinerja Rawat Inap</p>
+   </footer>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Google Sheets Configuration - Published CSV URL
+    const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT28IN0XIYUAf7Q5W7z8ew86twsfpgSEeXocKTVkjnx8zrZvj29LQAyacLy6MrXqRmxaEjdlbLud8bP/pub?gid=0&single=true&output=csv';
+
+    let rawData = [];
+    let currentFilteredData = [];
+    let dashboardFilterMode = 'bulan-ini';
+    let customFilterYear = 'all';
+    let customFilterMonth = 'all';
+    let allCharts = {};
+    let selectedYears = [];
+    let selectedPelayananYears = [];
+    let selectedBorYears = [];
+
+    const defaultConfig = {
+      dashboard_title: "Dashboard Indikator Kinerja Rawat Inap",
+      hospital_name: "RSUD Drs. H. AMRI TAMBUNAN",
+      period_label: "Periode Laporan:",
+      primary_color: "#3b82f6",
+      secondary_color: "#10b981",
+      background_color: "#f0f9ff",
+      card_color: "#ffffff",
+      text_color: "#1f2937",
+      font_family: "Inter",
+      font_size: 16
+    };
+
+    function parseIndonesianNumber(str) {
+      if (!str) return 0;
+      const cleaned = str.toString().replace(/\./g, '').replace(',', '.');
+      return parseFloat(cleaned) || 0;
+    }
+
+    function parseCSV(csv) {
+      const lines = csv.trim().split('\n');
+      const data = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        
+        // Parse CSV dengan handle quoted values
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let j = 0; j < lines[i].length; j++) {
+          const char = lines[i][j];
+          
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current.trim());
+        
+        if (values.length < 17) {
+          console.warn('Baris tidak lengkap:', i, values);
+          continue;
+        }
+
+        const periode = values[0];
+        
+        // Skip baris total/summary (Tahun 2024, Tahun 2025, dll)
+        if (periode.startsWith('Tahun')) {
+          continue;
+        }
+
+        const row = {
+          periode: periode,
+          jlhPasienMasuk: parseIndonesianNumber(values[1]),
+          jlhPasienKeluar: parseIndonesianNumber(values[2]),
+          jlhPasienDirawat: parseIndonesianNumber(values[3]),
+          hariRawatan: parseIndonesianNumber(values[6]),
+          bor: parseIndonesianNumber(values[11]),
+          avlos: parseIndonesianNumber(values[12]),
+          toi: parseIndonesianNumber(values[13]),
+          bto: parseIndonesianNumber(values[14]),
+          ndr: parseIndonesianNumber(values[15]),
+          gdr: parseIndonesianNumber(values[16]),
+          meninggal48: parseIndonesianNumber(values[8]),
+          meninggalKurang48: parseIndonesianNumber(values[9])
+        };
+
+        console.log('✅ Parsed:', row.periode, '| BOR:', row.bor, '| AVLOS:', row.avlos);
+        data.push(row);
+      }
+
+      console.log('📊 Total data berhasil di-parse:', data.length, 'baris');
+      return data;
+    }
+
+    async function loadDataFromGoogleSheets() {
+      const loadingIndicator = document.getElementById('loading-indicator');
+      const errorIndicator = document.getElementById('error-indicator');
+      
+      try {
+        loadingIndicator.style.display = 'flex';
+        errorIndicator.style.display = 'none';
+
+        const response = await fetch(GOOGLE_SHEETS_URL);
+        
+        if (!response.ok) {
+          throw new Error('Gagal mengambil data dari Google Sheets');
+        }
+
+        const csvText = await response.text();
+        rawData = parseCSV(csvText);
+        
+        if (rawData.length === 0) {
+          throw new Error('Data kosong atau format tidak sesuai');
+        }
+
+        loadingIndicator.style.display = 'none';
+        
+        initializeDashboard();
+        
+      } catch (error) {
+        console.error('Error loading data:', error);
+        loadingIndicator.style.display = 'none';
+        errorIndicator.style.display = 'block';
+      }
+    }
+
+    function getCurrentMonthYear() {
+      const now = new Date();
+      const monthMap = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      return {
+        month: monthMap[now.getMonth()],
+        year: now.getFullYear().toString()
+      };
+    }
+
+    function getLastMonthYear() {
+      const now = new Date();
+      now.setMonth(now.getMonth() - 1);
+      const monthMap = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      return {
+        month: monthMap[now.getMonth()],
+        year: now.getFullYear().toString()
+      };
+    }
+
+    function initializeDashboard() {
+      const years = [...new Set(rawData.map(d => d.periode.split(' ')[1]))].sort();
+      selectedYears = [...years];
+      selectedPelayananYears = [...years];
+      selectedBorYears = [...years];
+      
+      const customYearFilter = document.getElementById('custom-year');
+      customYearFilter.innerHTML = '<option value="all">Semua Tahun</option>' +
+        years.map(year => `<option value="${year}">${year}</option>`).join('');
+
+      const yearFilter = document.getElementById('year-filter');
+      yearFilter.innerHTML = '<option value="all">Semua Tahun</option>' +
+        years.map(year => `<option value="${year}">${year}</option>`).join('');
+
+      const yearCheckboxesContainer = document.getElementById('year-checkboxes');
+      yearCheckboxesContainer.innerHTML = years.map(year => `
+        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-2 rounded">
+          <input type="checkbox" value="${year}" checked class="year-checkbox w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-300">
+          <span>${year}</span>
+        </label>
+      `).join('');
+
+      const pelayananYearCheckboxesContainer = document.getElementById('pelayanan-year-checkboxes');
+      pelayananYearCheckboxesContainer.innerHTML = years.map(year => `
+        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-2 rounded">
+          <input type="checkbox" value="${year}" checked class="pelayanan-year-checkbox w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-300">
+          <span>${year}</span>
+        </label>
+      `).join('');
+
+      const borYearCheckboxesContainer = document.getElementById('bor-year-checkboxes');
+      borYearCheckboxesContainer.innerHTML = years.map(year => `
+        <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 p-2 rounded">
+          <input type="checkbox" value="${year}" checked class="bor-year-checkbox w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-300">
+          <span>${year}</span>
+        </label>
+      `).join('');
+
+      setupEventListeners();
+      applyDashboardFilter('bulan-ini');
+    }
+
+    function setupEventListeners() {
+      document.getElementById('filter-bulan-ini').addEventListener('click', () => {
+        setActiveQuickFilter('bulan-ini');
+        applyDashboardFilter('bulan-ini');
+      });
+      
+      document.getElementById('filter-bulan-lalu').addEventListener('click', () => {
+        setActiveQuickFilter('bulan-lalu');
+        applyDashboardFilter('bulan-lalu');
+      });
+      
+      document.getElementById('filter-tahun-ini').addEventListener('click', () => {
+        setActiveQuickFilter('tahun-ini');
+        applyDashboardFilter('tahun-ini');
+      });
+      
+      document.getElementById('filter-tahun-lalu').addEventListener('click', () => {
+        setActiveQuickFilter('tahun-lalu');
+        applyDashboardFilter('tahun-lalu');
+      });
+      
+      document.getElementById('filter-custom').addEventListener('click', () => {
+        setActiveQuickFilter('custom');
+        const customSelector = document.getElementById('custom-period-selector');
+        customSelector.style.display = customSelector.style.display === 'none' ? 'grid' : 'none';
+      });
+
+      document.getElementById('apply-custom-filter').addEventListener('click', () => {
+        customFilterYear = document.getElementById('custom-year').value;
+        customFilterMonth = document.getElementById('custom-month').value;
+        applyDashboardFilter('custom');
+      });
+
+      document.getElementById('year-filter').addEventListener('change', applyOtherTabsFilters);
+      document.getElementById('month-filter').addEventListener('change', applyOtherTabsFilters);
+      document.getElementById('reset-filter').addEventListener('click', () => {
+        document.getElementById('year-filter').value = 'all';
+        document.getElementById('month-filter').value = 'all';
+        applyOtherTabsFilters();
+      });
+
+      document.getElementById('trend-period').addEventListener('change', updateDashboardCharts);
+      document.getElementById('dashboard-chart-type').addEventListener('change', updateDashboardCharts);
+      
+      document.getElementById('pelayanan-trend-period').addEventListener('change', updatePelayananCharts);
+      document.getElementById('pelayanan-chart-type').addEventListener('change', updatePelayananCharts);
+      document.getElementById('bor-trend-period').addEventListener('change', updatePelayananCharts);
+      document.getElementById('bor-chart-type').addEventListener('change', updatePelayananCharts);
+
+      document.getElementById('tab-dashboard').addEventListener('click', () => switchTab('dashboard'));
+      document.getElementById('tab-pelayanan').addEventListener('click', () => switchTab('pelayanan'));
+      document.getElementById('tab-mutu').addEventListener('click', () => switchTab('mutu'));
+
+      const yearFilterBtn = document.getElementById('year-filter-btn');
+      const yearFilterDropdown = document.getElementById('year-filter-dropdown');
+      
+      yearFilterBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        yearFilterDropdown.classList.toggle('hidden');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!yearFilterDropdown.contains(e.target) && e.target !== yearFilterBtn) {
+          yearFilterDropdown.classList.add('hidden');
+        }
+      });
+
+      document.getElementById('select-all-years').addEventListener('change', (e) => {
+        const checkboxes = document.querySelectorAll('.year-checkbox');
+        checkboxes.forEach(cb => {
+          cb.checked = e.target.checked;
+        });
+        updateSelectedYears();
+        updateDashboardCharts();
+      });
+
+      document.getElementById('year-checkboxes').addEventListener('change', (e) => {
+        if (e.target.classList.contains('year-checkbox')) {
+          updateSelectedYears();
+          updateDashboardCharts();
+          
+          const allCheckboxes = document.querySelectorAll('.year-checkbox');
+          const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+          document.getElementById('select-all-years').checked = allChecked;
+        }
+      });
+
+      const pelayananYearFilterBtn = document.getElementById('pelayanan-year-filter-btn');
+      const pelayananYearFilterDropdown = document.getElementById('pelayanan-year-filter-dropdown');
+      
+      pelayananYearFilterBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        pelayananYearFilterDropdown.classList.toggle('hidden');
+      });
+
+      document.getElementById('pelayanan-select-all-years').addEventListener('change', (e) => {
+        const checkboxes = document.querySelectorAll('.pelayanan-year-checkbox');
+        checkboxes.forEach(cb => {
+          cb.checked = e.target.checked;
+        });
+        updateSelectedPelayananYears();
+        updatePelayananCharts();
+      });
+
+      document.getElementById('pelayanan-year-checkboxes').addEventListener('change', (e) => {
+        if (e.target.classList.contains('pelayanan-year-checkbox')) {
+          updateSelectedPelayananYears();
+          updatePelayananCharts();
+          
+          const allCheckboxes = document.querySelectorAll('.pelayanan-year-checkbox');
+          const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+          document.getElementById('pelayanan-select-all-years').checked = allChecked;
+        }
+      });
+
+      const borYearFilterBtn = document.getElementById('bor-year-filter-btn');
+      const borYearFilterDropdown = document.getElementById('bor-year-filter-dropdown');
+      
+      borYearFilterBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        borYearFilterDropdown.classList.toggle('hidden');
+      });
+
+      document.getElementById('bor-select-all-years').addEventListener('change', (e) => {
+        const checkboxes = document.querySelectorAll('.bor-year-checkbox');
+        checkboxes.forEach(cb => {
+          cb.checked = e.target.checked;
+        });
+        updateSelectedBorYears();
+        updatePelayananCharts();
+      });
+
+      document.getElementById('bor-year-checkboxes').addEventListener('change', (e) => {
+        if (e.target.classList.contains('bor-year-checkbox')) {
+          updateSelectedBorYears();
+          updatePelayananCharts();
+          
+          const allCheckboxes = document.querySelectorAll('.bor-year-checkbox');
+          const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+          document.getElementById('bor-select-all-years').checked = allChecked;
+        }
+      });
+    }
+
+    function updateSelectedYears() {
+      const checkboxes = document.querySelectorAll('.year-checkbox:checked');
+      selectedYears = Array.from(checkboxes).map(cb => cb.value);
+    }
+
+    function updateSelectedPelayananYears() {
+      const checkboxes = document.querySelectorAll('.pelayanan-year-checkbox:checked');
+      selectedPelayananYears = Array.from(checkboxes).map(cb => cb.value);
+    }
+
+    function updateSelectedBorYears() {
+      const checkboxes = document.querySelectorAll('.bor-year-checkbox:checked');
+      selectedBorYears = Array.from(checkboxes).map(cb => cb.value);
+    }
+
+    function setActiveQuickFilter(filterName) {
+      document.querySelectorAll('.quick-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      const btnMap = {
+        'bulan-ini': 'filter-bulan-ini',
+        'bulan-lalu': 'filter-bulan-lalu',
+        'tahun-ini': 'filter-tahun-ini',
+        'tahun-lalu': 'filter-tahun-lalu',
+        'custom': 'filter-custom'
+      };
+      
+      document.getElementById(btnMap[filterName]).classList.add('active');
+      dashboardFilterMode = filterName;
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+        btn.classList.add('text-gray-600', 'hover:text-blue-600');
+      });
+
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+      document.getElementById(`tab-${tabName}`).classList.remove('text-gray-600', 'hover:text-blue-600');
+      document.getElementById(`content-${tabName}`).classList.add('active');
+
+      if (tabName === 'dashboard') {
+        document.getElementById('dashboard-filters').style.display = 'block';
+        document.getElementById('other-tabs-filters').style.display = 'none';
+      } else {
+        document.getElementById('dashboard-filters').style.display = 'none';
+        document.getElementById('other-tabs-filters').style.display = 'grid';
+        
+        if (tabName === 'pelayanan') {
+          updatePelayananCharts();
+        } else if (tabName === 'mutu') {
+          updateMutuCharts();
+        }
+      }
+    }
+
+    function applyDashboardFilter(mode) {
+      let filtered = [];
+      const current = getCurrentMonthYear();
+      const lastMonth = getLastMonthYear();
+      
+      if (mode === 'bulan-ini') {
+        filtered = rawData.filter(d => {
+          const parts = d.periode.split(' ');
+          return parts.length === 2 && parts[0] === current.month && parts[1] === current.year;
+        });
+      } else if (mode === 'bulan-lalu') {
+        filtered = rawData.filter(d => {
+          const parts = d.periode.split(' ');
+          return parts.length === 2 && parts[0] === lastMonth.month && parts[1] === lastMonth.year;
+        });
+      } else if (mode === 'tahun-ini') {
+        filtered = rawData.filter(d => {
+          const parts = d.periode.split(' ');
+          return parts.length === 2 && parts[1] === current.year;
+        });
+      } else if (mode === 'tahun-lalu') {
+        const lastYear = (parseInt(current.year) - 1).toString();
+        filtered = rawData.filter(d => {
+          const parts = d.periode.split(' ');
+          return parts.length === 2 && parts[1] === lastYear;
+        });
+      } else if (mode === 'custom') {
+        if (customFilterYear !== 'all' && customFilterMonth === 'all') {
+          filtered = rawData.filter(d => {
+            const parts = d.periode.split(' ');
+            return parts.length === 2 && parts[1] === customFilterYear;
+          });
+        } else if (customFilterYear !== 'all' && customFilterMonth !== 'all') {
+          filtered = rawData.filter(d => {
+            const parts = d.periode.split(' ');
+            return parts.length === 2 && parts[0] === customFilterMonth && parts[1] === customFilterYear;
+          });
+        } else if (customFilterYear === 'all' && customFilterMonth !== 'all') {
+          filtered = rawData.filter(d => d.periode.split(' ')[0] === customFilterMonth);
+        } else {
+          filtered = rawData;
+        }
+      }
+      
+      currentFilteredData = filtered;
+      updateDashboardPeriodLabel(mode);
+      calculateMetrics();
+      updateDashboardCharts();
+      generateExecutiveInsights();
+    }
+
+    function applyOtherTabsFilters() {
+      const yearFilter = document.getElementById('year-filter').value;
+      const monthFilter = document.getElementById('month-filter').value;
+      
+      let filtered = rawData;
+      
+      if (yearFilter !== 'all' && monthFilter === 'all') {
+        filtered = filtered.filter(d => {
+          const parts = d.periode.split(' ');
+          return parts.length === 2 && parts[1] === yearFilter;
+        });
+      } else if (yearFilter !== 'all' && monthFilter !== 'all') {
+        filtered = filtered.filter(d => {
+          const parts = d.periode.split(' ');
+          return parts.length === 2 && parts[0] === monthFilter && parts[1] === yearFilter;
+        });
+      } else if (yearFilter === 'all' && monthFilter !== 'all') {
+        filtered = filtered.filter(d => d.periode.split(' ')[0] === monthFilter);
+      }
+      
+      currentFilteredData = filtered;
+      updateOtherTabsPeriodLabel();
+      
+      const activeTab = document.querySelector('.tab-button.active').id;
+      if (activeTab === 'tab-pelayanan') {
+        updatePelayananCharts();
+        populateTable();
+      } else if (activeTab === 'tab-mutu') {
+        updateMutuCharts();
+        generateQualityContent();
+      }
+    }
+
+    function updateDashboardPeriodLabel(mode) {
+      const periodElement = document.getElementById('current-period');
+      const current = getCurrentMonthYear();
+      const lastMonth = getLastMonthYear();
+      
+      const monthNames = {
+        'Jan': 'Januari', 'Feb': 'Februari', 'Mar': 'Maret', 'Apr': 'April',
+        'Mei': 'Mei', 'Jun': 'Juni', 'Jul': 'Juli', 'Agu': 'Agustus',
+        'Sep': 'September', 'Okt': 'Oktober', 'Nov': 'November', 'Des': 'Desember'
+      };
+      
+      if (mode === 'bulan-ini') {
+        periodElement.textContent = `${monthNames[current.month]} ${current.year}`;
+      } else if (mode === 'bulan-lalu') {
+        periodElement.textContent = `${monthNames[lastMonth.month]} ${lastMonth.year}`;
+      } else if (mode === 'tahun-ini') {
+        periodElement.textContent = `Tahun ${current.year}`;
+      } else if (mode === 'tahun-lalu') {
+        const lastYear = (parseInt(current.year) - 1).toString();
+        periodElement.textContent = `Tahun ${lastYear}`;
+      } else if (mode === 'custom') {
+        if (customFilterYear !== 'all' && customFilterMonth !== 'all') {
+          periodElement.textContent = `${monthNames[customFilterMonth]} ${customFilterYear}`;
+        } else if (customFilterYear !== 'all' && customFilterMonth === 'all') {
+          periodElement.textContent = `Tahun ${customFilterYear}`;
+        } else if (customFilterYear === 'all' && customFilterMonth !== 'all') {
+          periodElement.textContent = `${monthNames[customFilterMonth]} (Semua Tahun)`;
+        } else {
+          const years = [...new Set(rawData.map(d => d.periode.split(' ')[1]))].sort();
+          periodElement.textContent = `${years[0]} - ${years[years.length - 1]}`;
+        }
+      }
+    }
+
+    function updateOtherTabsPeriodLabel() {
+      const yearFilter = document.getElementById('year-filter').value;
+      const monthFilter = document.getElementById('month-filter').value;
+      const periodElement = document.getElementById('current-period');
+      
+      const monthNames = {
+        'Jan': 'Januari', 'Feb': 'Februari', 'Mar': 'Maret', 'Apr': 'April',
+        'Mei': 'Mei', 'Jun': 'Juni', 'Jul': 'Juli', 'Agu': 'Agustus',
+        'Sep': 'September', 'Okt': 'Oktober', 'Nov': 'November', 'Des': 'Desember'
+      };
+      
+      if (yearFilter === 'all' && monthFilter === 'all') {
+        const years = [...new Set(rawData.map(d => d.periode.split(' ')[1]))].sort();
+        if (years.length > 0) {
+          periodElement.textContent = `${years[0]} - ${years[years.length - 1]}`;
+        }
+      } else if (yearFilter !== 'all' && monthFilter === 'all') {
+        periodElement.textContent = `Tahun ${yearFilter}`;
+      } else if (yearFilter === 'all' && monthFilter !== 'all') {
+        periodElement.textContent = `${monthNames[monthFilter]} (Semua Tahun)`;
+      } else {
+        periodElement.textContent = `${monthNames[monthFilter]} ${yearFilter}`;
+      }
+    }
+
+    function getTrendData() {
+      const trendPeriod = document.getElementById('trend-period').value;
+      let data = rawData;
+      
+      if (selectedYears.length > 0) {
+        data = data.filter(d => {
+          const year = d.periode.split(' ')[1];
+          return selectedYears.includes(year);
+        });
+      }
+      
+      if (trendPeriod === 'monthly') {
+        return data;
+      } else if (trendPeriod === 'quarterly') {
+        const quarterMap = {
+          'Jan': 'Q1', 'Feb': 'Q1', 'Mar': 'Q1',
+          'Apr': 'Q2', 'Mei': 'Q2', 'Jun': 'Q2',
+          'Jul': 'Q3', 'Agu': 'Q3', 'Sep': 'Q3',
+          'Okt': 'Q4', 'Nov': 'Q4', 'Des': 'Q4'
+        };
+        
+        const yearQuarterGroups = {};
+        data.forEach(row => {
+          const parts = row.periode.split(' ');
+          if (parts.length === 2) {
+            const quarter = quarterMap[parts[0]];
+            const year = parts[1];
+            
+            if (!yearQuarterGroups[year]) {
+              yearQuarterGroups[year] = {};
+            }
+            
+            if (!yearQuarterGroups[year][quarter]) {
+              yearQuarterGroups[year][quarter] = {
+                jlhPasienMasuk: 0,
+                jlhPasienKeluar: 0,
+                jlhPasienDirawat: 0,
+                hariRawatan: 0,
+                bor: 0,
+                avlos: 0,
+                toi: 0,
+                bto: 0,
+                ndr: 0,
+                gdr: 0,
+                meninggal48: 0,
+                meninggalKurang48: 0,
+                count: 0
+              };
+            }
+            
+            yearQuarterGroups[year][quarter].jlhPasienMasuk += row.jlhPasienMasuk;
+            yearQuarterGroups[year][quarter].jlhPasienKeluar += row.jlhPasienKeluar;
+            yearQuarterGroups[year][quarter].jlhPasienDirawat += row.jlhPasienDirawat;
+            yearQuarterGroups[year][quarter].hariRawatan += row.hariRawatan;
+            yearQuarterGroups[year][quarter].bor += row.bor;
+            yearQuarterGroups[year][quarter].avlos += row.avlos;
+            yearQuarterGroups[year][quarter].toi += row.toi;
+            yearQuarterGroups[year][quarter].bto += row.bto;
+            yearQuarterGroups[year][quarter].ndr += row.ndr;
+            yearQuarterGroups[year][quarter].gdr += row.gdr;
+            yearQuarterGroups[year][quarter].meninggal48 += row.meninggal48;
+            yearQuarterGroups[year][quarter].meninggalKurang48 += row.meninggalKurang48;
+            yearQuarterGroups[year][quarter].count++;
+          }
+        });
+        
+        const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+        const years = Object.keys(yearQuarterGroups).sort();
+        
+        const result = [];
+        years.forEach(year => {
+          quarters.forEach(quarter => {
+            if (yearQuarterGroups[year][quarter]) {
+              const group = yearQuarterGroups[year][quarter];
+              result.push({
+                periode: `${quarter} ${year}`,
+                year: year,
+                quarter: quarter,
+                jlhPasienMasuk: group.jlhPasienMasuk,
+                jlhPasienKeluar: group.jlhPasienKeluar,
+                jlhPasienDirawat: group.jlhPasienDirawat,
+                hariRawatan: group.hariRawatan,
+                bor: group.bor / group.count,
+                avlos: group.avlos / group.count,
+                toi: group.toi / group.count,
+                bto: group.bto / group.count,
+                ndr: group.ndr / group.count,
+                gdr: group.gdr / group.count,
+                meninggal48: group.meninggal48,
+                meninggalKurang48: group.meninggalKurang48
+              });
+            }
+          });
+        });
+        
+        return result;
+      } else if (trendPeriod === 'yearly') {
+        const yearGroups = {};
+        data.forEach(row => {
+          const year = row.periode.split(' ')[1];
+          
+          if (!yearGroups[year]) {
+            yearGroups[year] = {
+              periode: year,
+              jlhPasienMasuk: 0,
+              jlhPasienKeluar: 0,
+              jlhPasienDirawat: 0,
+              hariRawatan: 0,
+              bor: 0,
+              avlos: 0,
+              toi: 0,
+              bto: 0,
+              ndr: 0,
+              gdr: 0,
+              meninggal48: 0,
+              meninggalKurang48: 0,
+              count: 0
+            };
+          }
+          
+          yearGroups[year].jlhPasienMasuk += row.jlhPasienMasuk;
+          yearGroups[year].jlhPasienKeluar += row.jlhPasienKeluar;
+          yearGroups[year].jlhPasienDirawat += row.jlhPasienDirawat;
+          yearGroups[year].hariRawatan += row.hariRawatan;
+          yearGroups[year].bor += row.bor;
+          yearGroups[year].avlos += row.avlos;
+          yearGroups[year].toi += row.toi;
+          yearGroups[year].bto += row.bto;
+          yearGroups[year].ndr += row.ndr;
+          yearGroups[year].gdr += row.gdr;
+          yearGroups[year].meninggal48 += row.meninggal48;
+          yearGroups[year].meninggalKurang48 += row.meninggalKurang48;
+          yearGroups[year].count++;
+        });
+        
+        return Object.keys(yearGroups).sort().map(year => {
+          const group = yearGroups[year];
+          return {
+            periode: group.periode,
+            jlhPasienMasuk: group.jlhPasienMasuk,
+            jlhPasienKeluar: group.jlhPasienKeluar,
+            jlhPasienDirawat: group.jlhPasienDirawat,
+            hariRawatan: group.hariRawatan,
+            bor: group.bor / group.count,
+            avlos: group.avlos / group.count,
+            toi: group.toi / group.count,
+            bto: group.bto / group.count,
+            ndr: group.ndr / group.count,
+            gdr: group.gdr / group.count,
+            meninggal48: group.meninggal48,
+            meninggalKurang48: group.meninggalKurang48
+          };
+        });
+      }
+      
+      return data;
+    }
+
+    function getTrendDataPelayanan(baseData, trendPeriod, yearFilter = null) {
+      let data = baseData;
+      
+      if (yearFilter && yearFilter.length > 0) {
+        data = data.filter(d => {
+          const year = d.periode.split(' ')[1];
+          return yearFilter.includes(year);
+        });
+      }
+      
+      if (trendPeriod === 'monthly') {
+        return data;
+      } else if (trendPeriod === 'quarterly') {
+        const quarterMap = {
+          'Jan': 'Q1', 'Feb': 'Q1', 'Mar': 'Q1',
+          'Apr': 'Q2', 'Mei': 'Q2', 'Jun': 'Q2',
+          'Jul': 'Q3', 'Agu': 'Q3', 'Sep': 'Q3',
+          'Okt': 'Q4', 'Nov': 'Q4', 'Des': 'Q4'
+        };
+        
+        const yearQuarterGroups = {};
+        data.forEach(row => {
+          const parts = row.periode.split(' ');
+          if (parts.length === 2) {
+            const quarter = quarterMap[parts[0]];
+            const year = parts[1];
+            
+            if (!yearQuarterGroups[year]) {
+              yearQuarterGroups[year] = {};
+            }
+            
+            if (!yearQuarterGroups[year][quarter]) {
+              yearQuarterGroups[year][quarter] = {
+                jlhPasienMasuk: 0,
+                jlhPasienKeluar: 0,
+                jlhPasienDirawat: 0,
+                hariRawatan: 0,
+                bor: 0,
+                count: 0
+              };
+            }
+            
+            yearQuarterGroups[year][quarter].jlhPasienMasuk += row.jlhPasienMasuk;
+            yearQuarterGroups[year][quarter].jlhPasienKeluar += row.jlhPasienKeluar;
+            yearQuarterGroups[year][quarter].jlhPasienDirawat += row.jlhPasienDirawat;
+            yearQuarterGroups[year][quarter].hariRawatan += row.hariRawatan;
+            yearQuarterGroups[year][quarter].bor += row.bor;
+            yearQuarterGroups[year][quarter].count++;
+          }
+        });
+        
+        const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+        const years = Object.keys(yearQuarterGroups).sort();
+        
+        const result = [];
+        years.forEach(year => {
+          quarters.forEach(quarter => {
+            if (yearQuarterGroups[year][quarter]) {
+              const group = yearQuarterGroups[year][quarter];
+              result.push({
+                periode: `${quarter} ${year}`,
+                year: year,
+                quarter: quarter,
+                jlhPasienMasuk: group.jlhPasienMasuk,
+                jlhPasienKeluar: group.jlhPasienKeluar,
+                jlhPasienDirawat: group.jlhPasienDirawat,
+                hariRawatan: group.hariRawatan,
+                bor: group.bor / group.count
+              });
+            }
+          });
+        });
+        
+        return result;
+      } else if (trendPeriod === 'yearly') {
+        const yearGroups = {};
+        data.forEach(row => {
+          const year = row.periode.split(' ')[1];
+          
+          if (!yearGroups[year]) {
+            yearGroups[year] = {
+              periode: year,
+              jlhPasienMasuk: 0,
+              jlhPasienKeluar: 0,
+              jlhPasienDirawat: 0,
+              hariRawatan: 0,
+              bor: 0,
+              count: 0
+            };
+          }
+          
+          yearGroups[year].jlhPasienMasuk += row.jlhPasienMasuk;
+          yearGroups[year].jlhPasienKeluar += row.jlhPasienKeluar;
+          yearGroups[year].jlhPasienDirawat += row.jlhPasienDirawat;
+          yearGroups[year].hariRawatan += row.hariRawatan;
+          yearGroups[year].bor += row.bor;
+          yearGroups[year].count++;
+        });
+        
+        return Object.keys(yearGroups).sort().map(year => {
+          const group = yearGroups[year];
+          return {
+            periode: group.periode,
+            jlhPasienMasuk: group.jlhPasienMasuk,
+            jlhPasienKeluar: group.jlhPasienKeluar,
+            jlhPasienDirawat: group.jlhPasienDirawat,
+            hariRawatan: group.hariRawatan,
+            bor: group.bor / group.count
+          };
+        });
+      }
+      
+      return data;
+    }
+
+    function updateDashboardCharts() {
+      if (allCharts.bor) allCharts.bor.destroy();
+      if (allCharts.avlos) allCharts.avlos.destroy();
+      if (allCharts.toi) allCharts.toi.destroy();
+      if (allCharts.bto) allCharts.bto.destroy();
+      
+      createBorChart();
+      createAvlosChart();
+      createToiChart();
+      createBtoChart();
+    }
+
+    function updatePelayananCharts() {
+      if (allCharts.patientMonthly) allCharts.patientMonthly.destroy();
+      if (allCharts.borPatient) allCharts.borPatient.destroy();
+      if (allCharts.hariRawatan) allCharts.hariRawatan.destroy();
+      
+      createPatientMonthlyChart();
+      createBorPatientChart();
+      createHariRawatanChart();
+      populateTable();
+    }
+
+    function updateMutuCharts() {
+      if (allCharts.mortalityNdrGdr) allCharts.mortalityNdrGdr.destroy();
+      if (allCharts.mortalityDetail) allCharts.mortalityDetail.destroy();
+      
+      createMortalityNdrGdrChart();
+      createMortalityDetailChart();
+      generateQualityContent();
+    }
+
+    function calculateMetrics() {
+      const data = currentFilteredData;
+      
+      const cardPeriodInfo = document.getElementById('card-period-info');
+      
+      if (data.length === 0) {
+        cardPeriodInfo.textContent = 'Tidak ada data untuk periode yang dipilih';
+        document.getElementById('bor-value').textContent = '--';
+        document.getElementById('avlos-value').textContent = '--';
+        document.getElementById('toi-value').textContent = '--';
+        document.getElementById('bto-value').textContent = '--';
+        document.getElementById('ndr-value').textContent = '--';
+        document.getElementById('gdr-value').textContent = '--';
+        return;
+      }
+      
+      const current = getCurrentMonthYear();
+      const lastMonth = getLastMonthYear();
+      const monthNames = {
+        'Jan': 'Januari', 'Feb': 'Februari', 'Mar': 'Maret', 'Apr': 'April',
+        'Mei': 'Mei', 'Jun': 'Juni', 'Jul': 'Juli', 'Agu': 'Agustus',
+        'Sep': 'September', 'Okt': 'Oktober', 'Nov': 'November', 'Des': 'Desember'
+      };
+      
+      if (dashboardFilterMode === 'bulan-ini') {
+        cardPeriodInfo.textContent = `${monthNames[current.month]} ${current.year}`;
+      } else if (dashboardFilterMode === 'bulan-lalu') {
+        cardPeriodInfo.textContent = `${monthNames[lastMonth.month]} ${lastMonth.year}`;
+      } else if (dashboardFilterMode === 'tahun-ini') {
+        cardPeriodInfo.textContent = `Rata-rata Tahun ${current.year}`;
+      } else if (dashboardFilterMode === 'tahun-lalu') {
+        const lastYear = (parseInt(current.year) - 1).toString();
+        cardPeriodInfo.textContent = `Rata-rata Tahun ${lastYear}`;
+      } else if (dashboardFilterMode === 'custom') {
+        if (customFilterYear !== 'all' && customFilterMonth !== 'all') {
+          cardPeriodInfo.textContent = `${monthNames[customFilterMonth]} ${customFilterYear}`;
+        } else if (customFilterYear !== 'all' && customFilterMonth === 'all') {
+          cardPeriodInfo.textContent = `Rata-rata Tahun ${customFilterYear}`;
+        } else if (customFilterYear === 'all' && customFilterMonth !== 'all') {
+          cardPeriodInfo.textContent = `Rata-rata ${monthNames[customFilterMonth]} (Semua Tahun)`;
+        } else {
+          const years = [...new Set(rawData.map(d => d.periode.split(' ')[1]))].sort();
+          cardPeriodInfo.textContent = `Rata-rata ${years[0]} - ${years[years.length - 1]}`;
+        }
+      }
+      
+      const bor = (data.reduce((sum, d) => sum + d.bor, 0) / data.length).toFixed(2);
+      const avlos = (data.reduce((sum, d) => sum + d.avlos, 0) / data.length).toFixed(2);
+      const toi = (data.reduce((sum, d) => sum + d.toi, 0) / data.length).toFixed(2);
+      const bto = (data.reduce((sum, d) => sum + d.bto, 0) / data.length).toFixed(2);
+      const ndr = (data.reduce((sum, d) => sum + d.ndr, 0) / data.length).toFixed(2);
+      const gdr = (data.reduce((sum, d) => sum + d.gdr, 0) / data.length).toFixed(2);
+
+      document.getElementById('bor-value').textContent = bor + '%';
+      document.getElementById('avlos-value').textContent = avlos;
+      document.getElementById('toi-value').textContent = toi;
+      document.getElementById('bto-value').textContent = bto;
+      document.getElementById('ndr-value').textContent = ndr + '‰';
+      document.getElementById('gdr-value').textContent = gdr + '‰';
+
+      const borStatus = document.getElementById('bor-status');
+      const borIconBg = document.getElementById('bor-icon-bg');
+      if (bor >= 60 && bor <= 85) {
+        borStatus.style.background = '#10b981';
+        borIconBg.style.background = 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)';
+      } else if (bor > 85 && bor <= 100) {
+        borStatus.style.background = '#f59e0b';
+        borIconBg.style.background = 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)';
+      } else {
+        borStatus.style.background = '#ef4444';
+        borIconBg.style.background = 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)';
+      }
+
+      const avlosStatus = document.getElementById('avlos-status');
+      const avlosIconBg = document.getElementById('avlos-icon-bg');
+      if (avlos >= 6 && avlos <= 9) {
+        avlosStatus.style.background = '#10b981';
+        avlosIconBg.style.background = 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)';
+      } else {
+        avlosStatus.style.background = '#f59e0b';
+        avlosIconBg.style.background = 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)';
+      }
+
+      const toiStatus = document.getElementById('toi-status');
+      const toiIconBg = document.getElementById('toi-icon-bg');
+      if (toi >= 1 && toi <= 3) {
+        toiStatus.style.background = '#10b981';
+        toiIconBg.style.background = 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)';
+      } else {
+        toiStatus.style.background = '#f59e0b';
+        toiIconBg.style.background = 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)';
+      }
+
+      const btoStatus = document.getElementById('bto-status');
+      const btoIconBg = document.getElementById('bto-icon-bg');
+      if (bto >= 40 && bto <= 50) {
+        btoStatus.style.background = '#10b981';
+        btoIconBg.style.background = 'linear-gradient(135deg, #fed7aa 0%, #fdba74 100%)';
+      } else {
+        btoStatus.style.background = '#ef4444';
+        btoIconBg.style.background = 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)';
+      }
+
+      document.getElementById('ndr-status').style.background = ndr < 40 ? '#10b981' : '#f59e0b';
+      document.getElementById('ndr-icon-bg').style.background = 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)';
+      
+      document.getElementById('gdr-status').style.background = gdr < 60 ? '#10b981' : '#f59e0b';
+      document.getElementById('gdr-icon-bg').style.background = 'linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)';
+    }
+
+    function createBorChart() {
+      const ctx = document.getElementById('bor-chart').getContext('2d');
+      const data = getTrendData();
+      const trendPeriod = document.getElementById('trend-period').value;
+      const chartType = document.getElementById('dashboard-chart-type').value;
+      
+      let labels, datasets;
+      if (trendPeriod === 'monthly') {
+        const yearGroups = {};
+        data.forEach(d => {
+          const parts = d.periode.split(' ');
+          if (parts.length === 2) {
+            const month = parts[0];
+            const year = parts[1];
+            
+            if (!yearGroups[year]) {
+              yearGroups[year] = {};
+            }
+            yearGroups[year][month] = d.bor;
+          }
+        });
+        
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        labels = months;
+        
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+        datasets = Object.keys(yearGroups).sort().map((year, index) => {
+          return {
+            label: `BOR ${year}`,
+            data: months.map(month => yearGroups[year][month] || null),
+            borderColor: colors[index % colors.length],
+            backgroundColor: chartType === 'bar' ? colors[index % colors.length] + 'cc' : colors[index % colors.length] + '20',
+            tension: 0.4,
+            fill: chartType === 'line',
+            spanGaps: true
+          };
+        });
+      } else if (trendPeriod === 'quarterly') {
+        const yearGroups = {};
+        data.forEach(d => {
+          if (d.year && d.quarter) {
+            if (!yearGroups[d.year]) {
+              yearGroups[d.year] = {};
+            }
+            yearGroups[d.year][d.quarter] = d.bor;
+          }
+        });
+        
+        const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+        labels = quarters;
+        
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+        datasets = Object.keys(yearGroups).sort().map((year, index) => {
+          return {
+            label: `BOR ${year}`,
+            data: quarters.map(quarter => yearGroups[year][quarter] || null),
+            borderColor: colors[index % colors.length],
+            backgroundColor: chartType === 'bar' ? colors[index % colors.length] + 'cc' : colors[index % colors.length] + '20',
+            tension: 0.4,
+            fill: chartType === 'line',
+            spanGaps: true
+          };
+        });
+      } else {
+        labels = data.map(d => d.periode);
+        datasets = [
+          {
+            label: 'BOR (%)',
+            data: data.map(d => d.bor),
+            borderColor: '#3b82f6',
+            backgroundColor: chartType === 'bar' ? 'rgba(59, 130, 246, 0.8)' : 'rgba(59, 130, 246, 0.2)',
+            tension: 0.4,
+            fill: chartType === 'line'
+          }
+        ];
+      }
+
+      allCharts.bor = new Chart(ctx, {
+        type: chartType,
+        data: {
+          labels: labels,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: { 
+              display: trendPeriod !== 'yearly',
+              position: 'bottom'
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ': ' + (context.parsed.y ? context.parsed.y.toFixed(2) + '%' : 'N/A');
+                }
+              }
+            }
+          },
+          scales: {
+            y: { 
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Persentase (%)'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function createAvlosChart() {
+      const ctx = document.getElementById('avlos-chart').getContext('2d');
+      const data = getTrendData();
+      const trendPeriod = document.getElementById('trend-period').value;
+      const chartType = document.getElementById('dashboard-chart-type').value;
+      
+      let labels, datasets;
+      if (trendPeriod === 'monthly') {
+        const yearGroups = {};
+        data.forEach(d => {
+          const parts = d.periode.split(' ');
+          if (parts.length === 2) {
+            const month = parts[0];
+            const year = parts[1];
+            
+            if (!yearGroups[year]) yearGroups[year] = {};
+            yearGroups[year][month] = d.avlos;
+          }
+        });
+        
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        labels = months;
+        
+        const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+        datasets = Object.keys(yearGroups).sort().map((year, index) => ({
+          label: `AVLOS ${year}`,
+          data: months.map(month => yearGroups[year][month] || null),
+          borderColor: colors[index % colors.length],
+          backgroundColor: chartType === 'bar' ? colors[index % colors.length] + 'cc' : colors[index % colors.length] + '20',
+          tension: 0.4,
+          fill: chartType === 'line',
+          spanGaps: true
+        }));
+      } else if (trendPeriod === 'quarterly') {
+        const yearGroups = {};
+        data.forEach(d => {
+          if (d.year && d.quarter) {
+            if (!yearGroups[d.year]) yearGroups[d.year] = {};
+            yearGroups[d.year][d.quarter] = d.avlos;
+          }
+        });
+        
+        const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+        labels = quarters;
+        
+        const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+        datasets = Object.keys(yearGroups).sort().map((year, index) => ({
+          label: `AVLOS ${year}`,
+          data: quarters.map(quarter => yearGroups[year][quarter] || null),
+          borderColor: colors[index % colors.length],
+          backgroundColor: chartType === 'bar' ? colors[index % colors.length] + 'cc' : colors[index % colors.length] + '20',
+          tension: 0.4,
+          fill: chartType === 'line',
+          spanGaps: true
+        }));
+      } else {
+        labels = data.map(d => d.periode);
+        datasets = [{
+          label: 'AVLOS (Hari)',
+          data: data.map(d => d.avlos),
+          borderColor: '#10b981',
+          backgroundColor: chartType === 'bar' ? 'rgba(16, 185, 129, 0.8)' : 'rgba(16, 185, 129, 0.2)',
+          tension: 0.4,
+          fill: chartType === 'line'
+        }];
+      }
+
+      allCharts.avlos = new Chart(ctx, {
+        type: chartType,
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: trendPeriod !== 'yearly', position: 'bottom' },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                label: (context) => context.dataset.label + ': ' + (context.parsed.y ? context.parsed.y.toFixed(2) + ' hari' : 'N/A')
+              }
+            }
+          },
+          scales: {
+            y: { 
+              beginAtZero: true,
+              title: { display: true, text: 'Hari' }
+            }
+          }
+        }
+      });
+    }
+
+    function createToiChart() {
+      const ctx = document.getElementById('toi-chart').getContext('2d');
+      const data = getTrendData();
+      const trendPeriod = document.getElementById('trend-period').value;
+      const chartType = document.getElementById('dashboard-chart-type').value;
+      
+      let labels, datasets;
+      if (trendPeriod === 'monthly') {
+        const yearGroups = {};
+        data.forEach(d => {
+          const parts = d.periode.split(' ');
+          if (parts.length === 2) {
+            const month = parts[0];
+            const year = parts[1];
+            if (!yearGroups[year]) yearGroups[year] = {};
+            yearGroups[year][month] = d.toi;
+          }
+        });
+        
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        labels = months;
+        
+        const colors = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#ec4899'];
+        datasets = Object.keys(yearGroups).sort().map((year, index) => ({
+          label: `TOI ${year}`,
+          data: months.map(month => yearGroups[year][month] || null),
+          borderColor: colors[index % colors.length],
+          backgroundColor: chartType === 'bar' ? colors[index % colors.length] + 'cc' : colors[index % colors.length] + '20',
+          tension: 0.4,
+          fill: chartType === 'line',
+          spanGaps: true
+        }));
+      } else if (trendPeriod === 'quarterly') {
+        const yearGroups = {};
+        data.forEach(d => {
+          if (d.year && d.quarter) {
+            if (!yearGroups[d.year]) yearGroups[d.year] = {};
+            yearGroups[d.year][d.quarter] = d.toi;
+          }
+        });
+        
+        const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+        labels = quarters;
+        
+        const colors = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#ec4899'];
+        datasets = Object.keys(yearGroups).sort().map((year, index) => ({
+          label: `TOI ${year}`,
+          data: quarters.map(quarter => yearGroups[year][quarter] || null),
+          borderColor: colors[index % colors.length],
+          backgroundColor: chartType === 'bar' ? colors[index % colors.length] + 'cc' : colors[index % colors.length] + '20',
+          tension: 0.4,
+          fill: chartType === 'line',
+          spanGaps: true
+        }));
+      } else {
+        labels = data.map(d => d.periode);
+        datasets = [{
+          label: 'TOI (Hari)',
+          data: data.map(d => d.toi),
+          borderColor: '#f59e0b',
+          backgroundColor: chartType === 'bar' ? 'rgba(245, 158, 11, 0.8)' : 'rgba(245, 158, 11, 0.2)',
+          tension: 0.4,
+          fill: chartType === 'line'
+        }];
+      }
+
+      allCharts.toi = new Chart(ctx, {
+        type: chartType,
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: trendPeriod !== 'yearly', position: 'bottom' },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                label: (context) => context.dataset.label + ': ' + (context.parsed.y ? context.parsed.y.toFixed(2) + ' hari' : 'N/A')
+              }
+            }
+          },
+          scales: {
+            y: { 
+              beginAtZero: true,
+              title: { display: true, text: 'Hari' }
+            }
+          }
+        }
+      });
+    }
+
+    function createBtoChart() {
+      const ctx = document.getElementById('bto-chart').getContext('2d');
+      const data = getTrendData();
+      const trendPeriod = document.getElementById('trend-period').value;
+      const chartType = document.getElementById('dashboard-chart-type').value;
+      
+      let labels, datasets;
+      if (trendPeriod === 'monthly') {
+        const yearGroups = {};
+        data.forEach(d => {
+          const parts = d.periode.split(' ');
+          if (parts.length === 2) {
+            const month = parts[0];
+            const year = parts[1];
+            if (!yearGroups[year]) yearGroups[year] = {};
+            yearGroups[year][month] = d.bto;
+          }
+        });
+        
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        labels = months;
+        
+        const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+        datasets = Object.keys(yearGroups).sort().map((year, index) => ({
+          label: `BTO ${year}`,
+          data: months.map(month => yearGroups[year][month] || null),
+          borderColor: colors[index % colors.length],
+          backgroundColor: chartType === 'bar' ? colors[index % colors.length] + 'cc' : colors[index % colors.length] + '20',
+          tension: 0.4,
+          fill: chartType === 'line',
+          spanGaps: true
+        }));
+      } else if (trendPeriod === 'quarterly') {
+        const yearGroups = {};
+        data.forEach(d => {
+          if (d.year && d.quarter) {
+            if (!yearGroups[d.year]) yearGroups[d.year] = {};
+            yearGroups[d.year][d.quarter] = d.bto;
+          }
+        });
+        
+        const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+        labels = quarters;
+        
+        const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+        datasets = Object.keys(yearGroups).sort().map((year, index) => ({
+          label: `BTO ${year}`,
+          data: quarters.map(quarter => yearGroups[year][quarter] || null),
+          borderColor: colors[index % colors.length],
+          backgroundColor: chartType === 'bar' ? colors[index % colors.length] + 'cc' : colors[index % colors.length] + '20',
+          tension: 0.4,
+          fill: chartType === 'line',
+          spanGaps: true
+        }));
+      } else {
+        labels = data.map(d => d.periode);
+        datasets = [{
+          label: 'BTO (Kali)',
+          data: data.map(d => d.bto),
+          borderColor: '#ef4444',
+          backgroundColor: chartType === 'bar' ? 'rgba(239, 68, 68, 0.8)' : 'rgba(239, 68, 68, 0.2)',
+          tension: 0.4,
+          fill: chartType === 'line'
+        }];
+      }
+
+      allCharts.bto = new Chart(ctx, {
+        type: chartType,
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: trendPeriod !== 'yearly', position: 'bottom' },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                label: (context) => context.dataset.label + ': ' + (context.parsed.y ? context.parsed.y.toFixed(2) + ' kali' : 'N/A')
+              }
+            }
+          },
+          scales: {
+            y: { 
+              beginAtZero: true,
+              title: { display: true, text: 'Kali' }
+            }
+          }
+        }
+      });
+    }
+
+    function createPatientMonthlyChart() {
+      const ctx = document.getElementById('patient-monthly-chart').getContext('2d');
+      const trendPeriod = document.getElementById('pelayanan-trend-period').value;
+      const chartType = document.getElementById('pelayanan-chart-type').value;
+      const data = getTrendDataPelayanan(currentFilteredData, trendPeriod, selectedPelayananYears);
+
+      const labels = data.map(d => d.periode);
+
+      allCharts.patientMonthly = new Chart(ctx, {
+        type: chartType,
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Pasien Masuk',
+              data: data.map(d => d.jlhPasienMasuk),
+              borderColor: '#3b82f6',
+              backgroundColor: chartType === 'bar' ? 'rgba(59, 130, 246, 0.8)' : 'rgba(59, 130, 246, 0.2)',
+              tension: 0.4,
+              fill: chartType === 'line'
+            },
+            {
+              label: 'Pasien Keluar',
+              data: data.map(d => d.jlhPasienKeluar),
+              borderColor: '#10b981',
+              backgroundColor: chartType === 'bar' ? 'rgba(16, 185, 129, 0.8)' : 'rgba(16, 185, 129, 0.2)',
+              tension: 0.4,
+              fill: chartType === 'line'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            y: { 
+              beginAtZero: true,
+              title: { display: true, text: 'Jumlah Pasien' }
+            }
+          }
+        }
+      });
+    }
+
+    function createBorPatientChart() {
+      const ctx = document.getElementById('bor-patient-chart').getContext('2d');
+      const trendPeriod = document.getElementById('bor-trend-period').value;
+      const chartType = document.getElementById('bor-chart-type').value;
+      const data = getTrendDataPelayanan(currentFilteredData, trendPeriod, selectedBorYears);
+
+      const labels = data.map(d => d.periode);
+
+      allCharts.borPatient = new Chart(ctx, {
+        type: chartType,
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'BOR (%)',
+              data: data.map(d => d.bor),
+              borderColor: '#ef4444',
+              backgroundColor: chartType === 'bar' ? 'rgba(239, 68, 68, 0.8)' : 'rgba(239, 68, 68, 0.2)',
+              tension: 0.4,
+              yAxisID: 'y',
+              fill: chartType === 'line'
+            },
+            {
+              label: 'Jumlah Pasien Dirawat',
+              data: data.map(d => d.jlhPasienDirawat),
+              borderColor: '#8b5cf6',
+              backgroundColor: chartType === 'bar' ? 'rgba(139, 92, 246, 0.8)' : 'rgba(139, 92, 246, 0.2)',
+              tension: 0.4,
+              yAxisID: 'y1',
+              fill: chartType === 'line'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            y: { 
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: { display: true, text: 'BOR (%)' }
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              title: { display: true, text: 'Jumlah Pasien' },
+              grid: { drawOnChartArea: false }
+            }
+          }
+        }
+      });
+    }
+
+    function createHariRawatanChart() {
+      const ctx = document.getElementById('hari-rawatan-chart').getContext('2d');
+      const trendPeriod = document.getElementById('bor-trend-period').value;
+      const chartType = document.getElementById('bor-chart-type').value;
+      const data = getTrendDataPelayanan(currentFilteredData, trendPeriod, selectedBorYears);
+
+      const labels = data.map(d => d.periode);
+
+      allCharts.hariRawatan = new Chart(ctx, {
+        type: chartType,
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Hari Rawatan',
+            data: data.map(d => d.hariRawatan),
+            borderColor: '#f59e0b',
+            backgroundColor: chartType === 'bar' ? 'rgba(245, 158, 11, 0.8)' : 'rgba(245, 158, 11, 0.2)',
+            tension: 0.4,
+            fill: chartType === 'line'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            y: { 
+              beginAtZero: true,
+              title: { display: true, text: 'Jumlah Hari' }
+            }
+          }
+        }
+      });
+    }
+
+    function createMortalityNdrGdrChart() {
+      const ctx = document.getElementById('mortality-ndr-gdr-chart').getContext('2d');
+      const data = currentFilteredData;
+      const labels = data.map(d => d.periode);
+
+      allCharts.mortalityNdrGdr = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'NDR (‰)',
+              data: data.map(d => d.ndr),
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.2)',
+              tension: 0.4,
+              fill: true
+            },
+            {
+              label: 'GDR (‰)',
+              data: data.map(d => d.gdr),
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.2)',
+              tension: 0.4,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            y: { 
+              beginAtZero: true,
+              title: { display: true, text: 'Per 1000 (‰)' }
+            }
+          }
+        }
+      });
+    }
+
+    function createMortalityDetailChart() {
+      const ctx = document.getElementById('mortality-detail-chart').getContext('2d');
+      const data = currentFilteredData;
+      const labels = data.map(d => d.periode);
+
+      allCharts.mortalityDetail = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Meninggal �� 48 Jam',
+              data: data.map(d => d.meninggal48),
+              backgroundColor: 'rgba(239, 68, 68, 0.8)',
+              borderColor: '#ef4444',
+              borderWidth: 1
+            },
+            {
+              label: 'Meninggal < 48 Jam',
+              data: data.map(d => d.meninggalKurang48),
+              backgroundColor: 'rgba(245, 158, 11, 0.8)',
+              borderColor: '#f59e0b',
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            y: { 
+              beginAtZero: true,
+              title: { display: true, text: 'Jumlah Pasien' }
+            },
+            x: {
+              stacked: true
+            },
+            y: {
+              stacked: true
+            }
+          }
+        }
+      });
+    }
+
+    function formatAngkaIndonesia(angka, desimal = 0) {
+      const formatted = angka.toFixed(desimal);
+      const parts = formatted.split('.');
+      
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      
+      return parts.join(',');
+    }
+
+    function populateTable() {
+      const tbody = document.getElementById('table-body');
+      const data = currentFilteredData;
+      
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" class="border border-gray-300 px-4 py-8 text-center text-gray-500">Tidak ada data untuk periode yang dipilih</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = data.map((row, index) => {
+        const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-blue-50';
+        return `
+          <tr class="${rowClass} hover:bg-blue-100 transition-colors">
+            <td class="border border-gray-300 px-4 py-2 font-medium text-gray-800">${row.periode}</td>
+            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.jlhPasienMasuk)}</td>
+            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.jlhPasienKeluar)}</td>
+            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.jlhPasienDirawat)}</td>
+            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.hariRawatan)}</td>
+            <td class="border border-gray-300 px-4 py-2 text-right font-semibold text-blue-700">${formatAngkaIndonesia(row.bor, 2)}%</td>
+            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.avlos, 2)}</td>
+            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.toi, 2)}</td>
+            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.bto, 2)}</td>
+            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.ndr, 2)}���</td>
+            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.gdr, 2)}‰</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function generateExecutiveInsights() {
+      const data = currentFilteredData;
+      const container = document.getElementById('executive-insights');
+      
+      if (data.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-500 italic">Tidak ada data untuk periode yang dipilih.</p>';
+        return;
+      }
+      
+      const avgBOR = (data.reduce((sum, d) => sum + d.bor, 0) / data.length).toFixed(1);
+      const avgAVLOS = (data.reduce((sum, d) => sum + d.avlos, 0) / data.length).toFixed(1);
+      const avgNDR = (data.reduce((sum, d) => sum + d.ndr, 0) / data.length).toFixed(1);
+
+      const insights = [
+        {
+          icon: '🏥',
+          text: `BOR rata-rata ${avgBOR}% - ${avgBOR >= 60 && avgBOR <= 85 ? '✅ Sesuai target nasional (60-85%)' : avgBOR > 85 ? '⚠️ Di atas target, evaluasi kapasitas' : '⚠️ Di bawah target, optimalisasi pemanfaatan'}`
+        },
+        {
+          icon: '⏱️',
+          text: `AVLOS rata-rata ${avgAVLOS} hari - ${avgAVLOS >= 6 && avgAVLOS <= 9 ? '✅ Efisiensi rawat inap baik' : '⚠️ Perlu optimalisasi discharge planning'}`
+        },
+        {
+          icon: '💊',
+          text: `NDR ${avgNDR}‰ - ${avgNDR < 40 ? '✅ Mutu pelayanan terjaga' : '⚠️ Perlu peningkatan protokol keselamatan'}`
+        }
+      ];
+
+      container.innerHTML = insights.map(insight => `
+        <div class="insight-box p-4 rounded-lg">
+          <div class="flex items-start gap-3">
+            <span class="text-xl">${insight.icon}</span>
+            <p class="text-sm text-gray-700 leading-relaxed">${insight.text}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function generateQualityContent() {
+      const data = currentFilteredData;
+      
+      const interpretationContainer = document.getElementById('quality-interpretation');
+      
+      if (data.length === 0) {
+        interpretationContainer.innerHTML = '<p class="text-sm text-gray-500 italic">Tidak ada data untuk periode yang dipilih.</p>';
+        document.getElementById('quality-recommendations').innerHTML = '<p class="text-sm text-gray-500 italic">Tidak ada data untuk periode yang dipilih.</p>';
+        return;
+      }
+
+      const avgNDR = (data.reduce((sum, d) => sum + d.ndr, 0) / data.length).toFixed(2);
+      const avgGDR = (data.reduce((sum, d) => sum + d.gdr, 0) / data.length).toFixed(2);
+      const totalMeninggal48 = data.reduce((sum, d) => sum + d.meninggal48, 0);
+      const totalMeninggalKurang48 = data.reduce((sum, d) => sum + d.meninggalKurang48, 0);
+      const totalMeninggal = totalMeninggal48 + totalMeninggalKurang48;
+
+      const interpretations = [
+        {
+          icon: '📋',
+          text: `NDR rata-rata ${avgNDR}‰ menunjukkan angka kematian bersih ${avgNDR < 25 ? 'sangat baik' : avgNDR < 40 ? 'dalam batas wajar' : 'memerlukan perhatian khusus'}.`
+        },
+        {
+          icon: '📈',
+          text: `GDR rata-rata ${avgGDR}‰ (${avgGDR < 45 ? 'terkendali dengan baik' : avgGDR < 60 ? 'perlu monitoring' : 'memerlukan evaluasi mendalam'}).`
+        },
+        {
+          icon: '⚠️',
+          text: `Total ${totalMeninggal} pasien meninggal (${totalMeninggal48} pasien ≥48 jam, ${totalMeninggalKurang48} pasien <48 jam). Rasio meninggal ≥48 jam: ${((totalMeninggal48/totalMeninggal)*100).toFixed(1)}%.`
+        },
+        {
+          icon: '🏥',
+          text: `${totalMeninggalKurang48 > totalMeninggal48 ? '⚠️ Kematian <48 jam lebih tinggi - perlu evaluasi triase dan penanganan awal.' : '✅ Mayoritas kematian terjadi ≥48 jam - indikasi proses rawat inap memadai.'}`
+        }
+      ];
+
+      interpretationContainer.innerHTML = interpretations.map(item => `
+        <div class="insight-box p-4 rounded-lg">
+          <div class="flex items-start gap-3">
+            <span class="text-xl">${item.icon}</span>
+            <p class="text-sm text-gray-700 leading-relaxed">${item.text}</p>
+          </div>
+        </div>
+      `).join('');
+
+      const recommendationsContainer = document.getElementById('quality-recommendations');
+      
+      const recommendations = [
+        {
+          icon: '🔍',
+          text: 'Lakukan audit medis berkala terhadap kasus kematian untuk identifikasi pola dan faktor risiko.'
+        },
+        {
+          icon: '📊',
+          text: 'Tingkatkan sistem early warning score untuk deteksi dini pasien berisiko tinggi.'
+        },
+        {
+          icon: '👥',
+          text: 'Perkuat kompetensi tim medis melalui pelatihan penanganan kasus kritis dan emergency.'
+        },
+        {
+          icon: '📋',
+          text: 'Evaluasi dan perbaiki clinical pathway untuk penyakit dengan angka kematian tinggi.'
+        },
+        {
+          icon: '🔐',
+          text: 'Monitor kepatuhan terhadap standar prosedur operasional (SPO) dan protokol keselamatan pasien.'
+        }
+      ];
+
+      recommendationsContainer.innerHTML = recommendations.map(rec => `
+        <div class="insight-box p-4 rounded-lg" style="border-left-color: #10b981;">
+          <div class="flex items-start gap-3">
+            <span class="text-xl">${rec.icon}</span>
+            <p class="text-sm text-gray-700 leading-relaxed">${rec.text}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function onConfigChange(config) {
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'system-ui, -apple-system, sans-serif';
+      const baseSize = config.font_size || defaultConfig.font_size;
+
+      document.body.style.fontFamily = `${customFont}, ${baseFontStack}`;
+      
+      document.getElementById('dashboard-title').textContent = config.dashboard_title || defaultConfig.dashboard_title;
+      document.getElementById('dashboard-title').style.fontSize = `${baseSize * 1.875}px`;
+      
+      document.getElementById('hospital-name').textContent = config.hospital_name || defaultConfig.hospital_name;
+      document.getElementById('hospital-name').style.fontSize = `${baseSize * 1.125}px`;
+      
+      document.getElementById('period-label').textContent = config.period_label || defaultConfig.period_label;
+      document.getElementById('period-label').style.fontSize = `${baseSize * 0.875}px`;
+
+      const header = document.querySelector('header');
+      if (header) {
+        header.style.background = `linear-gradient(135deg, ${config.primary_color || defaultConfig.primary_color} 0%, ${config.secondary_color || defaultConfig.secondary_color} 100%)`;
+      }
+
+      document.body.style.background = `linear-gradient(180deg, ${config.background_color || defaultConfig.background_color} 0%, #e0f2fe 50%, #ffffff 100%)`;
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.primary_color || defaultConfig.primary_color,
+              set: (value) => {
+                config.primary_color = value;
+                window.elementSdk.setConfig({ primary_color: value });
+              }
+            },
+            {
+              get: () => config.secondary_color || defaultConfig.secondary_color,
+              set: (value) => {
+                config.secondary_color = value;
+                window.elementSdk.setConfig({ secondary_color: value });
+              }
+            },
+            {
+              get: () => config.background_color || defaultConfig.background_color,
+              set: (value) => {
+                config.background_color = value;
+                window.elementSdk.setConfig({ background_color: value });
+              }
+            },
+            {
+              get: () => config.card_color || defaultConfig.card_color,
+              set: (value) => {
+                config.card_color = value;
+                window.elementSdk.setConfig({ card_color: value });
+              }
+            },
+            {
+              get: () => config.text_color || defaultConfig.text_color,
+              set: (value) => {
+                config.text_color = value;
+                window.elementSdk.setConfig({ text_color: value });
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => config.font_family || defaultConfig.font_family,
+            set: (value) => {
+              config.font_family = value;
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          },
+          fontSizeable: {
+            get: () => config.font_size || defaultConfig.font_size,
+            set: (value) => {
+              config.font_size = value;
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          }
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["dashboard_title", config.dashboard_title || defaultConfig.dashboard_title],
+          ["hospital_name", config.hospital_name || defaultConfig.hospital_name],
+          ["period_label", config.period_label || defaultConfig.period_label]
+        ])
+      });
+    }
+
+    loadDataFromGoogleSheets();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b9a2d7b30c2c6b2',t:'MTc2NzY5MTYyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
