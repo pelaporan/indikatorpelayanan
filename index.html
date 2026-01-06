@@ -427,29 +427,66 @@
      </div>
     </section><!-- Tabel Data Lengkap -->
     <section class="px-8 py-6">
-     <div class="bg-white rounded-xl shadow-md p-6 overflow-x-auto">
+     <div class="bg-white rounded-xl shadow-md p-6">
       <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
-       <h2 class="text-2xl font-bold text-gray-800">📋 Tabel Data Lengkap</h2><button class="chart-action-btn" onclick="exportTableToCSV()"> 📥 Export Tabel ke CSV </button>
+       <h2 class="text-2xl font-bold text-gray-800">📋 Tabel Data Lengkap</h2>
+       <div class="flex items-center gap-3 flex-wrap"><button id="column-settings-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all duration-200 shadow-md flex items-center gap-2"> ⚙️ Pilih Kolom </button> <button class="chart-action-btn" onclick="exportTableToCSV()"> 📥 Export ke CSV </button>
+       </div>
+      </div><!-- Column Settings Modal -->
+      <div id="column-settings-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" style="display: none;">
+       <div class="bg-white rounded-xl shadow-2xl p-6 max-w-3xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+         <h3 class="text-xl font-bold text-gray-800">⚙️ Pilih Kolom yang Ditampilkan</h3><button id="close-modal-btn" class="text-gray-500 hover:text-gray-800 text-2xl font-bold">×</button>
+        </div>
+        <div class="mb-6"><button id="select-all-columns" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all mr-2"> ✓ Pilih Semua </button> <button id="deselect-all-columns" class="px-4 py-2 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition-all"> ✗ Hapus Semua </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" id="column-checkboxes"><!-- Will be populated by JS -->
+        </div>
+        <div class="mt-6 flex justify-end gap-3"><button id="cancel-column-btn" class="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg font-semibold hover:bg-gray-400 transition-all"> Batal </button> <button id="apply-column-btn" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all"> Terapkan </button>
+        </div>
+       </div>
+      </div><!-- Table Controls -->
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
+       <div class="flex items-center gap-3"><label for="rows-per-page" class="text-sm font-semibold text-gray-700">Tampilkan:</label> <select id="rows-per-page" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-300 text-gray-800 font-medium"> <option value="10">10 baris</option> <option value="25" selected>25 baris</option> <option value="50">50 baris</option> <option value="100">100 baris</option> <option value="all">Semua</option> </select>
+       </div>
+       <div class="flex items-center gap-2"><label for="table-search" class="text-sm font-semibold text-gray-700">🔍 Cari:</label> <input type="text" id="table-search" placeholder="Cari data..." class="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-300 text-gray-800 w-64">
+       </div>
+      </div><!-- Table Wrapper with Scroll -->
+      <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+       <table id="data-table" class="w-full border-collapse min-w-full">
+        <thead>
+         <tr class="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+          <th class="border border-blue-500 px-4 py-3 text-center font-bold sticky left-0 bg-blue-600 z-10" data-column="no">No</th>
+          <th class="border border-blue-500 px-4 py-3 text-left font-bold sticky left-[60px] bg-blue-600 z-10" data-column="periode">Periode</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="jlhPasienMasuk">Pasien Masuk</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="jlhPasienKeluar">Pasien Keluar</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="jlhPasienDirawat">Pasien Dirawat</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="jumlahTT">Jumlah TT</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="jumlahHari">Jumlah Hari</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="hariRawatan">Hari Rawatan</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="lamaDirawat">Lama Dirawat</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="meninggal48">Meninggal ≥48 Jam</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="meninggalKurang48">Meninggal &lt;48 Jam</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="pasienMeninggal">Pasien Meninggal</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="bor">BOR (%)</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="avlos">AVLOS (Hari)</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="toi">TOI (Hari)</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="bto">BTO (Kali)</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="ndr">NDR (‰)</th>
+          <th class="border border-blue-500 px-4 py-3 text-right font-bold" data-column="gdr">GDR (‰)</th>
+         </tr>
+        </thead>
+        <tbody id="table-body"><!-- Will be populated by JS -->
+        </tbody>
+       </table>
+      </div><!-- Pagination -->
+      <div class="flex items-center justify-between mt-4 flex-wrap gap-4">
+       <div class="text-sm text-gray-700">
+        Menampilkan <span id="showing-start" class="font-bold">0</span> - <span id="showing-end" class="font-bold">0</span> dari <span id="total-rows" class="font-bold">0</span> data
+       </div>
+       <div class="flex items-center gap-2" id="pagination-controls"><!-- Will be populated by JS -->
+       </div>
       </div>
-      <table id="data-table" class="w-full border-collapse">
-       <thead>
-        <tr class="bg-blue-600 text-white">
-         <th class="border border-gray-300 px-4 py-3 text-left font-semibold">Periode</th>
-         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">Pasien Masuk</th>
-         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">Pasien Keluar</th>
-         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">Pasien Dirawat</th>
-         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">Hari Rawatan</th>
-         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">BOR (%)</th>
-         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">AVLOS (Hari)</th>
-         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">TOI (Hari)</th>
-         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">BTO (Kali)</th>
-         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">NDR (‰)</th>
-         <th class="border border-gray-300 px-4 py-3 text-right font-semibold">GDR (‰)</th>
-        </tr>
-       </thead>
-       <tbody id="table-body"><!-- Will be populated by JS -->
-       </tbody>
-      </table>
      </div>
     </section>
    </div><!-- TAB 3: Mutu & Keselamatan Pasien -->
@@ -513,6 +550,52 @@
     let selectedYears = [];
     let selectedPelayananYears = [];
     let selectedBorYears = [];
+
+    // Table pagination and search variables
+    let currentPage = 1;
+    let rowsPerPage = 25;
+    let searchQuery = '';
+    let visibleColumns = {
+      no: true,
+      periode: true,
+      jlhPasienMasuk: true,
+      jlhPasienKeluar: true,
+      jlhPasienDirawat: true,
+      jumlahTT: true,
+      jumlahHari: true,
+      hariRawatan: true,
+      lamaDirawat: true,
+      meninggal48: true,
+      meninggalKurang48: true,
+      pasienMeninggal: true,
+      bor: true,
+      avlos: true,
+      toi: true,
+      bto: true,
+      ndr: true,
+      gdr: true
+    };
+
+    const columnLabels = {
+      no: 'No',
+      periode: 'Periode',
+      jlhPasienMasuk: 'Pasien Masuk',
+      jlhPasienKeluar: 'Pasien Keluar',
+      jlhPasienDirawat: 'Pasien Dirawat',
+      jumlahTT: 'Jumlah TT',
+      jumlahHari: 'Jumlah Hari',
+      hariRawatan: 'Hari Rawatan',
+      lamaDirawat: 'Lama Dirawat',
+      meninggal48: 'Meninggal ≥48 Jam',
+      meninggalKurang48: 'Meninggal <48 Jam',
+      pasienMeninggal: 'Pasien Meninggal',
+      bor: 'BOR (%)',
+      avlos: 'AVLOS (Hari)',
+      toi: 'TOI (Hari)',
+      bto: 'BTO (Kali)',
+      ndr: 'NDR (‰)',
+      gdr: 'GDR (‰)'
+    };
 
     // Export Functions
     function exportChartImage(chartId, filename) {
@@ -810,15 +893,19 @@
           jlhPasienMasuk: parseIndonesianNumber(values[1]),
           jlhPasienKeluar: parseIndonesianNumber(values[2]),
           jlhPasienDirawat: parseIndonesianNumber(values[3]),
+          jumlahTT: parseIndonesianNumber(values[4]),
+          jumlahHari: parseIndonesianNumber(values[5]),
           hariRawatan: parseIndonesianNumber(values[6]),
+          lamaDirawat: parseIndonesianNumber(values[7]),
+          meninggal48: parseIndonesianNumber(values[8]),
+          meninggalKurang48: parseIndonesianNumber(values[9]),
+          pasienMeninggal: parseIndonesianNumber(values[10]),
           bor: parseIndonesianNumber(values[11]),
           avlos: parseIndonesianNumber(values[12]),
           toi: parseIndonesianNumber(values[13]),
           bto: parseIndonesianNumber(values[14]),
           ndr: parseIndonesianNumber(values[15]),
-          gdr: parseIndonesianNumber(values[16]),
-          meninggal48: parseIndonesianNumber(values[8]),
-          meninggalKurang48: parseIndonesianNumber(values[9])
+          gdr: parseIndonesianNumber(values[16])
         };
 
         console.log('✅ Parsed:', row.periode, '| BOR:', row.bor, '| AVLOS:', row.avlos);
@@ -1069,6 +1156,101 @@
           const allCheckboxes = document.querySelectorAll('.bor-year-checkbox');
           const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
           document.getElementById('bor-select-all-years').checked = allChecked;
+        }
+      });
+
+      // Table controls
+      document.getElementById('rows-per-page').addEventListener('change', (e) => {
+        rowsPerPage = e.target.value === 'all' ? 'all' : parseInt(e.target.value);
+        currentPage = 1;
+        populateTable();
+      });
+
+      document.getElementById('table-search').addEventListener('input', (e) => {
+        searchQuery = e.target.value.toLowerCase();
+        currentPage = 1;
+        populateTable();
+      });
+
+      // Column settings modal
+      document.getElementById('column-settings-btn').addEventListener('click', () => {
+        openColumnSettingsModal();
+      });
+
+      document.getElementById('close-modal-btn').addEventListener('click', () => {
+        closeColumnSettingsModal();
+      });
+
+      document.getElementById('cancel-column-btn').addEventListener('click', () => {
+        closeColumnSettingsModal();
+      });
+
+      document.getElementById('apply-column-btn').addEventListener('click', () => {
+        applyColumnSettings();
+      });
+
+      document.getElementById('select-all-columns').addEventListener('click', () => {
+        document.querySelectorAll('.column-checkbox').forEach(cb => cb.checked = true);
+      });
+
+      document.getElementById('deselect-all-columns').addEventListener('click', () => {
+        document.querySelectorAll('.column-checkbox').forEach(cb => {
+          if (cb.dataset.column !== 'no' && cb.dataset.column !== 'periode') {
+            cb.checked = false;
+          }
+        });
+      });
+
+      document.getElementById('column-settings-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'column-settings-modal') {
+          closeColumnSettingsModal();
+        }
+      });
+    }
+
+    function openColumnSettingsModal() {
+      const modal = document.getElementById('column-settings-modal');
+      const checkboxContainer = document.getElementById('column-checkboxes');
+      
+      checkboxContainer.innerHTML = Object.keys(columnLabels).map(col => {
+        const isDisabled = col === 'no' || col === 'periode';
+        return `
+          <label class="flex items-center gap-2 p-3 rounded-lg border ${isDisabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white hover:bg-blue-50 cursor-pointer'} transition-colors">
+            <input 
+              type="checkbox" 
+              class="column-checkbox w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-300" 
+              data-column="${col}"
+              ${visibleColumns[col] ? 'checked' : ''}
+              ${isDisabled ? 'disabled checked' : ''}
+            />
+            <span class="text-sm font-medium ${isDisabled ? 'text-gray-500' : 'text-gray-700'}">${columnLabels[col]}</span>
+          </label>
+        `;
+      }).join('');
+      
+      modal.style.display = 'flex';
+    }
+
+    function closeColumnSettingsModal() {
+      document.getElementById('column-settings-modal').style.display = 'none';
+    }
+
+    function applyColumnSettings() {
+      document.querySelectorAll('.column-checkbox').forEach(cb => {
+        visibleColumns[cb.dataset.column] = cb.checked;
+      });
+      
+      updateTableColumns();
+      populateTable();
+      closeColumnSettingsModal();
+    }
+
+    function updateTableColumns() {
+      const headers = document.querySelectorAll('#data-table thead th');
+      headers.forEach(th => {
+        const column = th.dataset.column;
+        if (column && visibleColumns[column] !== undefined) {
+          th.style.display = visibleColumns[column] ? '' : 'none';
         }
       });
     }
@@ -2475,31 +2657,151 @@
 
     function populateTable() {
       const tbody = document.getElementById('table-body');
-      const data = currentFilteredData;
+      let data = currentFilteredData;
       
-      if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" class="border border-gray-300 px-4 py-8 text-center text-gray-500">Tidak ada data untuk periode yang dipilih</td></tr>';
+      // Apply search filter
+      if (searchQuery) {
+        data = data.filter(row => {
+          return Object.values(row).some(val => 
+            val.toString().toLowerCase().includes(searchQuery)
+          );
+        });
+      }
+
+      const totalRows = data.length;
+      
+      if (totalRows === 0) {
+        tbody.innerHTML = '<tr><td colspan="18" class="border border-gray-300 px-4 py-8 text-center text-gray-500">Tidak ada data yang sesuai dengan pencarian</td></tr>';
+        updatePaginationInfo(0, 0, 0);
+        document.getElementById('pagination-controls').innerHTML = '';
         return;
       }
-      
-      tbody.innerHTML = data.map((row, index) => {
+
+      // Calculate pagination
+      const totalPages = rowsPerPage === 'all' ? 1 : Math.ceil(totalRows / rowsPerPage);
+      const start = rowsPerPage === 'all' ? 0 : (currentPage - 1) * rowsPerPage;
+      const end = rowsPerPage === 'all' ? totalRows : Math.min(start + rowsPerPage, totalRows);
+      const paginatedData = data.slice(start, end);
+
+      // Populate table
+      tbody.innerHTML = paginatedData.map((row, index) => {
+        const globalIndex = start + index + 1;
         const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-blue-50';
+        
         return `
           <tr class="${rowClass} hover:bg-blue-100 transition-colors">
-            <td class="border border-gray-300 px-4 py-2 font-medium text-gray-800">${row.periode}</td>
-            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.jlhPasienMasuk)}</td>
-            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.jlhPasienKeluar)}</td>
-            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.jlhPasienDirawat)}</td>
-            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.hariRawatan)}</td>
-            <td class="border border-gray-300 px-4 py-2 text-right font-semibold text-blue-700">${formatAngkaIndonesia(row.bor, 2)}%</td>
-            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.avlos, 2)}</td>
-            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.toi, 2)}</td>
-            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.bto, 2)}</td>
-            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.ndr, 2)}‰</td>
-            <td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.gdr, 2)}‰</td>
+            ${visibleColumns.no ? `<td class="border border-gray-300 px-4 py-2 text-center font-medium text-gray-800 sticky left-0 ${rowClass}">${globalIndex}</td>` : ''}
+            ${visibleColumns.periode ? `<td class="border border-gray-300 px-4 py-2 font-semibold text-gray-800 sticky left-[60px] ${rowClass}">${row.periode}</td>` : ''}
+            ${visibleColumns.jlhPasienMasuk ? `<td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.jlhPasienMasuk)}</td>` : ''}
+            ${visibleColumns.jlhPasienKeluar ? `<td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.jlhPasienKeluar)}</td>` : ''}
+            ${visibleColumns.jlhPasienDirawat ? `<td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.jlhPasienDirawat)}</td>` : ''}
+            ${visibleColumns.jumlahTT ? `<td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.jumlahTT)}</td>` : ''}
+            ${visibleColumns.jumlahHari ? `<td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.jumlahHari)}</td>` : ''}
+            ${visibleColumns.hariRawatan ? `<td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.hariRawatan)}</td>` : ''}
+            ${visibleColumns.lamaDirawat ? `<td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.lamaDirawat, 2)}</td>` : ''}
+            ${visibleColumns.meninggal48 ? `<td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.meninggal48)}</td>` : ''}
+            ${visibleColumns.meninggalKurang48 ? `<td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.meninggalKurang48)}</td>` : ''}
+            ${visibleColumns.pasienMeninggal ? `<td class="border border-gray-300 px-4 py-2 text-right font-semibold text-red-600">${formatAngkaIndonesia(row.pasienMeninggal)}</td>` : ''}
+            ${visibleColumns.bor ? `<td class="border border-gray-300 px-4 py-2 text-right font-semibold text-blue-700">${formatAngkaIndonesia(row.bor, 2)}%</td>` : ''}
+            ${visibleColumns.avlos ? `<td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.avlos, 2)}</td>` : ''}
+            ${visibleColumns.toi ? `<td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.toi, 2)}</td>` : ''}
+            ${visibleColumns.bto ? `<td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.bto, 2)}</td>` : ''}
+            ${visibleColumns.ndr ? `<td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.ndr, 2)}‰</td>` : ''}
+            ${visibleColumns.gdr ? `<td class="border border-gray-300 px-4 py-2 text-right">${formatAngkaIndonesia(row.gdr, 2)}‰</td>` : ''}
           </tr>
         `;
       }).join('');
+
+      // Update visible columns
+      updateTableColumns();
+
+      // Update pagination info and controls
+      updatePaginationInfo(start + 1, end, totalRows);
+      renderPaginationControls(totalPages);
+    }
+
+    function updatePaginationInfo(start, end, total) {
+      document.getElementById('showing-start').textContent = start;
+      document.getElementById('showing-end').textContent = end;
+      document.getElementById('total-rows').textContent = total;
+    }
+
+    function renderPaginationControls(totalPages) {
+      const container = document.getElementById('pagination-controls');
+      
+      if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+      }
+
+      let controls = '';
+
+      // Previous button
+      controls += `
+        <button 
+          onclick="changePage(${currentPage - 1})" 
+          ${currentPage === 1 ? 'disabled' : ''}
+          class="px-3 py-2 rounded-lg border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300'} font-medium transition-all"
+        >
+          ‹ Prev
+        </button>
+      `;
+
+      // Page numbers
+      const maxPagesToShow = 5;
+      let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+      let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+      if (endPage - startPage < maxPagesToShow - 1) {
+        startPage = Math.max(1, endPage - maxPagesToShow + 1);
+      }
+
+      if (startPage > 1) {
+        controls += `
+          <button onclick="changePage(1)" class="px-3 py-2 rounded-lg border bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 font-medium transition-all">1</button>
+        `;
+        if (startPage > 2) {
+          controls += `<span class="px-2 text-gray-500">...</span>`;
+        }
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        controls += `
+          <button 
+            onclick="changePage(${i})" 
+            class="px-3 py-2 rounded-lg border ${i === currentPage ? 'bg-blue-600 text-white font-bold' : 'bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300'} font-medium transition-all"
+          >
+            ${i}
+          </button>
+        `;
+      }
+
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+          controls += `<span class="px-2 text-gray-500">...</span>`;
+        }
+        controls += `
+          <button onclick="changePage(${totalPages})" class="px-3 py-2 rounded-lg border bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 font-medium transition-all">${totalPages}</button>
+        `;
+      }
+
+      // Next button
+      controls += `
+        <button 
+          onclick="changePage(${currentPage + 1})" 
+          ${currentPage === totalPages ? 'disabled' : ''}
+          class="px-3 py-2 rounded-lg border ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300'} font-medium transition-all"
+        >
+          Next ›
+        </button>
+      `;
+
+      container.innerHTML = controls;
+    }
+
+    function changePage(page) {
+      currentPage = page;
+      populateTable();
     }
 
     function generateExecutiveInsights() {
@@ -2712,5 +3014,5 @@
 
     loadDataFromGoogleSheets();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b9c472bf5ed87d1',t:'MTc2NzcxMzY1MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b9c5a552163ce55',t:'MTc2NzcxNDQzNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
